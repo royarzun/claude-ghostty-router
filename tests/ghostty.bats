@@ -30,9 +30,11 @@ setup() {
 }
 
 @test "sin argumento resetea en vez de reventar" {
-  # ghostty.sh se carga en un script con `set -u`, donde un "$1" ausente
-  # mataria el proceso entero y no solo esta funcion.
-  run ghostty_bg
+  # `set -u` explicito: es la condicion que rompe, y bats no la activa por su
+  # cuenta. Sin esto el test pasa igual con el fallo puesto, que es no probar
+  # nada. ghostty.sh se carga en bin/claude-account, que si corre con set -u,
+  # y ahi un "$1" ausente mata el proceso entero y no solo la funcion.
+  run bash -c "set -u; . '$CAR_ROOT/lib/ghostty.sh'; ghostty_bg"
   [ "$status" -eq 0 ]
   [ "$output" = "$(printf '\033]111\007')" ]
 }
