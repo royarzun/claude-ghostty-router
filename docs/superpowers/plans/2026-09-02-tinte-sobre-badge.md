@@ -799,7 +799,8 @@ add-zsh-hook zshexit _car_cleanup
 - [ ] **Step 6: Correr los tests**
 
 Run: `bats tests/router_claude.bats tests/router_load.bats`
-Expected: 10 PASS en `router_claude.bats`, 5 PASS en `router_load.bats`.
+Expected: 10 PASS en `router_claude.bats`, 6 PASS en `router_load.bats` (el sexto salio de
+la revision: comprueba que el router limpia una marca de tenido heredada del entorno).
 
 - [ ] **Step 7: Suite completa**
 
@@ -903,6 +904,11 @@ Los puntos que hay que cubrir, sin prescribir la redacción exacta:
   para que un `SIGINT` no deje el tab teñido, y que el hook `zshexit` es la red para la
   sesión suspendida con Ctrl-Z.
 - Actualizar el número de tests de la sección de Desarrollo con el real.
+- Añadir a «Limitaciones conocidas» que un `claude` lanzado en una subshell —`(claude)` o
+  `claude &`— tiñe el tab pero queda fuera de la red de seguridad: la marca vive en una copia
+  privada de la variable que nunca vuelve al padre, así que si esa subshell muere antes de su
+  propio `always`, el tinte se queda. Es cosmético y se arregla abriendo un tab nuevo, pero
+  hay que decirlo en vez de que se descubra solo.
 
 - [ ] **Step 3: Verificar el número de tests que pusiste**
 
