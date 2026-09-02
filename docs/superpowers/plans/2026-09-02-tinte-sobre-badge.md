@@ -375,6 +375,15 @@ setup() {
 }
 ```
 
+Este archivo crecio durante la revision con cuatro tests mas, que las revisiones
+descubrieron necesarios y que no estaban en la version original de este plan: dos para el
+caso de `set -u` sin argumento (uno de ellos lanzando su propio `bash -c "set -u; ..."`,
+porque bats no activa `nounset` y sin eso el test pasaba con el fallo puesto) y dos que fijan
+el **tamano exacto en bytes** de cada secuencia. Estos ultimos existen porque bats recorta
+los saltos de linea finales de `$output`, y `"$(printf ...)"` tambien: ninguna asercion
+escrita contra `$output` puede ver un byte de mas despues del BEL, que es justo el fallo que
+este emisor no puede permitirse.
+
 - [ ] **Step 2: Correr los tests para verificar que fallan**
 
 Run: `bats tests/ghostty.bats`
@@ -573,8 +582,11 @@ cmd_tint() {
   # Solo hace falta el ultimo campo, asi que no se desmonta el registro entero:
   # mismo criterio que cmd_which con el primero.
   tint="${record##*$'\t'}"
-  [ "$tint" = "-" ] && return 0
-  ghostty_bg "$tint" || return 0
+  # Un fondo ausente no tine nada, y entonces tampoco hay que despintar al
+  # salir: router.zsh se guia por la salida vacia. El caso vacio importa aparte
+  # del "-" porque ghostty_bg lo tratara como un reset, que si escribe bytes.
+  case "$tint" in -|"") return 0 ;; esac
+  ghostty_bg "$tint"
   return 0
 }
 
