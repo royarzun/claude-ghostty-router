@@ -56,3 +56,14 @@ setup() {
   "$CAR_ROOT/install.sh" --uninstall --yes
   [ -f "$HOME/.config/claude-ghostty-router/routes.conf" ]
 }
+
+@test "no pisa en silencio un archivo ajeno en el destino del enlace" {
+  printf '#!/bin/sh\necho ajeno\n' > "$HOME/.local/bin/claude-account"
+  chmod +x "$HOME/.local/bin/claude-account"
+  run "$CAR_ROOT/install.sh" --yes
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"claude-account"* ]]
+  # El archivo ajeno sigue intacto
+  run cat "$HOME/.local/bin/claude-account"
+  [[ "$output" == *"ajeno"* ]]
+}

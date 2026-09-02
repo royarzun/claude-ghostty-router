@@ -31,6 +31,15 @@ confirmar() {
 instalar() {
   mkdir -p "$BIN_DIR" "$CONF_DIR"
 
+  # El destino puede ser: nuestro propio enlace (reinstalacion, se reemplaza),
+  # o algo ajeno que no nos toca destruir. La config de Ghostty se respalda
+  # antes de tocarla; un binario del usuario merece el mismo cuidado.
+  if [ -e "$BIN_DIR/claude-account" ] && [ ! -L "$BIN_DIR/claude-account" ]; then
+    echo "claude-account: ya hay un archivo (no un enlace) en $BIN_DIR/claude-account." >&2
+    echo "  No lo toco. Muevelo o borralo y vuelve a ejecutar el instalador." >&2
+    exit 1
+  fi
+
   ln -sf "$CAR_SRC/bin/claude-account" "$BIN_DIR/claude-account"
   echo "ok  enlace en $BIN_DIR/claude-account"
 
