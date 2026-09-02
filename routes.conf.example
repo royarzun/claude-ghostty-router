@@ -1,14 +1,10 @@
 # claude-ghostty-router — rutas de carpetas a cuentas Claude.
 #
-#   profile <nombre> <config-dir> [email-glob] [badge] [fondo]
+#   profile <nombre> <config-dir> [email-glob] [color-del-badge]
 #     email-glob: patron que DEBE cumplir la cuenta logueada. "-" = no verificar.
-#     badge:      #rrggbb con el que se pinta el nombre del perfil en el badge
-#                 que se ve dentro de Claude Code. "-" = sin color. Elige un
-#                 tono LEGIBLE sobre el fondo de tu tema.
-#     fondo:      #rrggbb del fondo del tab mientras corre Claude en una
-#                 carpeta de ese perfil. "-" = no tenir. Elige un tinte APENAS
-#                 PERCEPTIBLE sobre tu fondo habitual: se reconoce de reojo sin
-#                 arruinar el tema. El color que sirve de badge ciega de fondo.
+#     color:      #rrggbb con el que se pinta el nombre del perfil en el badge
+#                 que se ve dentro de Claude Code. "-" = sin color. Conviene un
+#                 tono legible sobre el fondo de tu tema, no un tinte apagado.
 #
 #   route <ruta> <perfil>
 #     Gana la primera ruta declarada: declara las excepciones antes que el padre.
@@ -21,8 +17,8 @@
 #
 # El primer perfil declarado es el perfil por defecto.
 
-profile personal  ~/.claude       tu-email@ejemplo.com  -        -
-profile work      ~/.claude-work  *@tuempresa.com       #e0a458  #171b12
+profile personal  ~/.claude       tu-email@ejemplo.com  -
+profile work      ~/.claude-work  *@tuempresa.com     #e0a458
 
 # route ~/repos/proyecto-de-trabajo  work
 # route ~/repos/cliente-*            work

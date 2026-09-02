@@ -1,12 +1,5 @@
 # El color solo mientras Claude corre — Plan de implementación
 
-> **OBSOLETO. No ejecutes este plan.** Se escribio para un proyecto que marcaba el tab con
-> titulo y color de fondo en cada `precmd`. Mientras tanto el proyecto se reescribio hacia el
-> badge del `statusLine`, que borro `lib/ghostty.sh` y dejo de pintar del todo, asi que casi
-> todos los pasos de aqui apuntan a codigo que ya no existe. Lo sustituye
-> [2026-09-02-tinte-sobre-badge.md](2026-09-02-tinte-sobre-badge.md). Se conserva por que
-> explica de donde salio la decision de tenir solo durante la sesion, que sigue vigente.
-
 > **Sin ejecutar.** Su spec quedó reemplazada por
 > [2026-09-02-badge-en-statusline-design.md](../specs/2026-09-02-badge-en-statusline-design.md):
 > el badge del `statusLine` dice la cuenta dentro de la sesión, y con eso el tinte deja de

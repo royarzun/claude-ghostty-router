@@ -19,7 +19,6 @@ CAR_ROOT_DIR="$(cd "$(dirname "$car_self")/.." && pwd)"
 . "$CAR_ROOT_DIR/lib/resolve.sh"
 . "$CAR_ROOT_DIR/lib/identity.sh"
 . "$CAR_ROOT_DIR/lib/badge.sh"
-. "$CAR_ROOT_DIR/lib/ghostty.sh"
 
 CAR_CONF="${CAR_CONF:-$HOME/.config/claude-ghostty-router/routes.conf}"
 
@@ -95,39 +94,6 @@ cmd_config_dirs() {
   done
 }
 
-# _tint <directorio>
-# Emite el color de fondo del perfil de ese directorio. Nunca falla: el pintado
-# informa, no decide. De un routes.conf roto avisa _launch-check al bloquear el
-# arranque, con archivo y linea por stderr.
-# Salida vacia significa "no hay nada que tenir", y router.zsh la usa para
-# saltarse el _untint de salida.
-cmd_tint() {
-  local dir="${1:-$PWD}" record tint
-
-  [ -f "$CAR_CONF" ] || return 0
-  car_load_config "$CAR_CONF" 2>/dev/null || return 0
-  record="$(resolve_route "$dir" 2>/dev/null)" || return 0
-
-  # Solo hace falta el ultimo campo, asi que no se desmonta el registro entero:
-  # mismo criterio que cmd_which con el primero.
-  tint="${record##*$'\t'}"
-  # Un fondo ausente no tine nada, y entonces tampoco hay que despintar al
-  # salir: router.zsh se guia por la salida vacia. El caso vacio importa
-  # aparte del "-" porque ghostty_bg lo tratara como un reset, que si escribe
-  # bytes.
-  case "$tint" in -|"") return 0 ;; esac
-  ghostty_bg "$tint"
-  return 0
-}
-
-# _untint
-# Devuelve el fondo al color del tema. No lee configuracion a proposito: corre
-# al salir de Claude y en el hook zshexit, donde routes.conf puede haber
-# desaparecido o roto sin que eso deba dejar el tab tenido.
-cmd_untint() {
-  ghostty_bg "-"
-}
-
 # _launch-check <directorio>
 # Exito: imprime el config-dir verificado (o nada si no hay routes.conf).
 # Fallo: explica en stderr y devuelve el codigo del motivo. Sin excepciones:
@@ -137,15 +103,15 @@ cmd_untint() {
 # `return $CAR_*` sin comillas se marca como sospechoso.
 # shellcheck disable=SC2086
 cmd_launch_check() {
-  local dir="${1:-$PWD}" record profile label config_dir glob color tint email status default_dir
+  local dir="${1:-$PWD}" record profile label config_dir glob color email status default_dir
 
   [ -f "$CAR_CONF" ] || return 0
 
   car_load_config "$CAR_CONF" || return $CAR_ECONFIG
   record="$(resolve_route "$dir")" || return $CAR_ECONFIG
-  # color y tint no se usan en esta ruta: solo hacen falta para pintar.
+  # color no se usa en esta ruta: solo hace falta para pintar la superficie.
   # shellcheck disable=SC2034
-  IFS=$'\t' read -r profile label config_dir glob color tint <<< "$record"
+  IFS=$'\t' read -r profile label config_dir glob color <<< "$record"
 
   # Claude Code usa dos layouts distintos segun CLAUDE_CONFIG_DIR este o no
   # puesta: sin ella, los datos viven en ~/.claude/ pero la config principal
@@ -185,12 +151,12 @@ cmd_launch_check() {
 }
 
 cmd_which() {
-  local dir="${1:-$PWD}" record
+  local dir="${1:-$PWD}" record profile label pdir pglob color
   car_load_config "$CAR_CONF" || return $CAR_ECONFIG
   record="$(resolve_route "$dir")" || return $CAR_ECONFIG
-  # Solo hace falta el primer campo, asi que no se desmonta el registro entero:
-  # un campo nuevo en resolve_route no obliga a volver aqui.
-  printf '%s\n' "${record%%$'\t'*}"
+  # shellcheck disable=SC2034
+  IFS=$'\t' read -r profile label pdir pglob color <<< "$record"
+  printf '%s\n' "$profile"
 }
 
 cmd_routes() {
@@ -206,7 +172,7 @@ cmd_routes() {
 }
 
 cmd_status() {
-  local i email status record profile here resto
+  local i email status record profile here pdir pglob color
 
   car_load_config "$CAR_CONF" || return $CAR_ECONFIG
 
@@ -223,7 +189,7 @@ cmd_status() {
 
   record="$(resolve_route "$PWD")" || return $CAR_ECONFIG
   # shellcheck disable=SC2034
-  IFS=$'\t' read -r profile here resto <<< "$record"
+  IFS=$'\t' read -r profile here pdir pglob color <<< "$record"
   echo
   echo "Directorio actual: $here -> perfil '$profile'"
 }
@@ -295,10 +261,6 @@ cmd_check() {
     status=$?
     if [ $status -ne 0 ]; then
       car_fail "${CAR_P_NAME[$i]}: sin sesion -> claude-account login ${CAR_P_NAME[$i]}"
-      # Los colores salen de routes.conf, no de la sesion: verlos aqui no
-      # depende de que haya login, y es justo el caso donde mas falta hacen
-      # para depurar un perfil roto.
-      printf '       badge %s · fondo %s\n' "${CAR_P_COLOR[$i]}" "${CAR_P_TINT[$i]}"
       continue
     fi
     if identity_matches "$email" "${CAR_P_GLOB[$i]}"; then
@@ -306,7 +268,6 @@ cmd_check() {
     else
       car_fail "${CAR_P_NAME[$i]}: $email no coincide con ${CAR_P_GLOB[$i]}"
     fi
-    printf '       badge %s · fondo %s\n' "${CAR_P_COLOR[$i]}" "${CAR_P_TINT[$i]}"
 
     creds="${CAR_P_DIR[$i]}/.credentials.json"
     if [ -f "$creds" ] && expires="$(python3 "$CAR_ROOT_DIR/lib/expiry.py" "$creds" 2>/dev/null)"; then
@@ -354,8 +315,6 @@ main() {
   case "$command" in
     statusline)    cmd_statusline "$@" ;;
     _config-dirs)  cmd_config_dirs "$@" ;;
-    _tint)         cmd_tint "$@" ;;
-    _untint)       cmd_untint ;;
     _launch-check) cmd_launch_check "$@" ;;
     which)         cmd_which "$@" ;;
     routes)        cmd_routes "$@" ;;
