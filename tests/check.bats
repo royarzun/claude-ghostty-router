@@ -34,8 +34,9 @@ perfiles_ok() {
     "route ~/repos/miapp work"
   perfiles_ok
   run "$CA" check
-  [[ "$output" == *"badge #8fbc5a"* ]]
-  [[ "$output" == *"fondo #171b12"* ]]
+  [[ "$output" == *"$(printf '\033[1;38;2;143;188;90m#8fbc5a\033[0m')"* ]]
+  [[ "$output" == *"#171b12"* ]]
+  [[ "$output" == *"$(printf '\033[48;2;23;27;18m')"* ]]
 }
 
 @test "un perfil sin sesion hace fallar el check" {
