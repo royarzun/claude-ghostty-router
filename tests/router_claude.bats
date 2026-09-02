@@ -2,8 +2,8 @@ setup() {
   load helper
   setup_fixture
   write_conf \
-    "profile personal ~/.claude tu-email@ejemplo.com -" \
-    "profile work ~/.claude-work *@empresa.com #171b12" \
+    "profile personal ~/.claude tu-email@ejemplo.com - -" \
+    "profile work ~/.claude-work *@empresa.com #8fbc5a #171b12" \
     "route ~/repos/miapp work"
   mkdir -p "$HOME/repos/miapp"
 
@@ -82,4 +82,42 @@ FALSO
   "
   [ "$status" -eq 0 ]
   [ -f "$RASTRO" ]
+}
+
+@test "tine el fondo antes de lanzar y lo devuelve al tema al salir" {
+  make_profile ".claude-work" "ricardo@empresa.com"
+  run_zsh "cd '$HOME/repos/miapp'; claude"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"$(printf '\033]11;#171b12\007')"* ]]
+  [[ "$output" == *"$(printf '\033]111\007')" ]]
+}
+
+@test "una cuenta equivocada no tine nada" {
+  # El pintado va despues de _launch-check a proposito: un arranque bloqueado
+  # no debe dejar rastro en el tab.
+  make_profile ".claude-work" "tu-email@ejemplo.com"
+  run_zsh "cd '$HOME/repos/miapp'; claude"
+  [ "$status" -eq 5 ]
+  [[ "$output" != *"$(printf '\033]11;')"* ]]
+  [[ "$output" != *"$(printf '\033]111\007')"* ]]
+}
+
+@test "un perfil sin fondo no emite ningun escape" {
+  make_profile ".claude" "tu-email@ejemplo.com"
+  run_zsh "cd '$HOME'; claude"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"$(printf '\033]11;')"* ]]
+  [[ "$output" != *"$(printf '\033]111\007')"* ]]
+}
+
+@test "despinta aunque Claude salga con codigo distinto de cero" {
+  make_profile ".claude-work" "ricardo@empresa.com"
+  cat > "$FAKE_BIN/claude" <<'FALSO'
+#!/bin/sh
+exit 3
+FALSO
+  chmod +x "$FAKE_BIN/claude"
+  run_zsh "cd '$HOME/repos/miapp'; claude"
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"$(printf '\033]111\007')" ]]
 }

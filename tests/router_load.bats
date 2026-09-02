@@ -48,3 +48,12 @@ run_zsh() {
   run_zsh "print -r -- \"omz=\${DISABLE_AUTO_TITLE:-sin-tocar}\""
   [[ "$output" == *"omz=sin-tocar"* ]]
 }
+
+@test "el hook de salida despinta si una sesion quedo suspendida" {
+  # El bloque always de claude() cubre la salida normal. Este hook cubre el
+  # unico camino que no: suspender Claude con Ctrl-Z y cerrar el tab sin
+  # volver a la sesion. Se simula dejando puesta la marca que ese bloque
+  # habria vaciado.
+  run_zsh "_car_tinted=1"
+  [ "$output" = "$(printf '\033]111\007')" ]
+}
