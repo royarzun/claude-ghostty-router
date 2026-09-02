@@ -267,14 +267,14 @@ car_check_bad=0
 car_ok()   { printf '  ok   %s\n' "$1"; car_check_ok=$((car_check_ok + 1)); }
 car_fail() { printf '  FALLA %s\n' "$1"; car_check_bad=$((car_check_bad + 1)); }
 
-# car_check_colores <indice>
+# car_colores <indice>
 # Los dos colores del perfil, cada uno pintado con el suyo: el hex del badge
 # con su color, y el fondo seguido de un bloque de ese color. Los campos son
 # adyacentes y con la misma sintaxis, asi que un intercambio parsea limpio y
 # ningun mensaje lo delata; mostrandolos asi el error se ve solo, con el hex
 # del badge ilegible o el bloque del fondo cegando.
 # Linea informativa, no una comprobacion: no toca car_check_ok ni car_check_bad.
-car_check_colores() {
+car_colores() {
   local i="$1" swatch
   swatch="$(badge_swatch "${CAR_P_TINT[$i]}")"
   printf '       badge %s · fondo %s%s\n' \
@@ -314,7 +314,7 @@ cmd_check() {
       # Los colores salen de routes.conf, no de la sesion: verlos aqui no
       # depende de que haya login, y es justo el caso donde mas falta hacen
       # para depurar un perfil roto.
-      car_check_colores "$i"
+      car_colores "$i"
       continue
     fi
     if identity_matches "$email" "${CAR_P_GLOB[$i]}"; then
@@ -322,7 +322,7 @@ cmd_check() {
     else
       car_fail "${CAR_P_NAME[$i]}: $email no coincide con ${CAR_P_GLOB[$i]}"
     fi
-    car_check_colores "$i"
+    car_colores "$i"
 
     creds="${CAR_P_DIR[$i]}/.credentials.json"
     if [ -f "$creds" ] && expires="$(python3 "$CAR_ROOT_DIR/lib/expiry.py" "$creds" 2>/dev/null)"; then

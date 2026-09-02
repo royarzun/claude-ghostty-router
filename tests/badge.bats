@@ -78,7 +78,7 @@ setup() {
 @test "sin argumento no pinta ningun bloque" {
   # Se carga en un script con `set -u`, donde un "$1" ausente mataria el
   # proceso entero y no solo esta funcion.
-  run bash -c ". '$CAR_ROOT/lib/badge.sh'; badge_swatch"
+  run bash -c "set -u; . '$CAR_ROOT/lib/badge.sh'; badge_swatch"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 }
