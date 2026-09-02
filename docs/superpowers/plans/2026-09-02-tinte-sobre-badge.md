@@ -561,15 +561,15 @@ En `bin/claude-account`, justo antes del comentario `# _launch-check <directorio
 # Salida vacia significa "no hay nada que tenir", y router.zsh la usa para
 # saltarse el _untint de salida.
 cmd_tint() {
-  local dir="${1:-$PWD}" record profile label pdir pglob color tint
+  local dir="${1:-$PWD}" record tint
 
   [ -f "$CAR_CONF" ] || return 0
   car_load_config "$CAR_CONF" 2>/dev/null || return 0
   record="$(resolve_route "$dir" 2>/dev/null)" || return 0
 
-  # Del registro entero aqui solo importa el ultimo campo.
-  # shellcheck disable=SC2034
-  IFS=$'\t' read -r profile label pdir pglob color tint <<< "$record"
+  # Solo hace falta el ultimo campo, asi que no se desmonta el registro entero:
+  # mismo criterio que cmd_which con el primero.
+  tint="${record##*$'\t'}"
   [ "$tint" = "-" ] && return 0
   ghostty_bg "$tint" || return 0
   return 0
