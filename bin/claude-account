@@ -266,11 +266,13 @@ cmd_check() {
 
   echo "Perfiles"
   for ((i = 0; i < ${#CAR_P_NAME[@]}; i++)); do
-    car_colores "$i"
     email="$(identity_email "${CAR_P_DIR[$i]}" 2>/dev/null)"
     status=$?
     if [ $status -ne 0 ]; then
       car_fail "${CAR_P_NAME[$i]}: sin sesion -> claude-account login ${CAR_P_NAME[$i]}"
+      # El color sale de routes.conf y no de la sesion, asi que se ve igual sin
+      # login: es justo el caso donde mas falta hace para depurar un perfil roto.
+      car_colores "$i"
       continue
     fi
     if identity_matches "$email" "${CAR_P_GLOB[$i]}"; then
@@ -278,6 +280,7 @@ cmd_check() {
     else
       car_fail "${CAR_P_NAME[$i]}: $email no coincide con ${CAR_P_GLOB[$i]}"
     fi
+    car_colores "$i"
 
     creds="${CAR_P_DIR[$i]}/.credentials.json"
     if [ -f "$creds" ] && expires="$(python3 "$CAR_ROOT_DIR/lib/expiry.py" "$creds" 2>/dev/null)"; then
