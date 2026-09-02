@@ -85,11 +85,15 @@ FALSO
 }
 
 @test "tine el fondo antes de lanzar y lo devuelve al tema al salir" {
+  # La marca FIN, igual que en el test del codigo distinto de cero: el reset
+  # tiene que llegar dentro de la sesion y no cuando la shell se cierra. Sin
+  # ella, despintar solo cuando Claude falla pasaria verde, y el caso comun
+  # (Claude sale bien) dejaria el tab tenido hasta cerrar el tab.
   make_profile ".claude-work" "ricardo@empresa.com"
-  run_zsh "cd '$HOME/repos/miapp'; claude"
+  run_zsh "cd '$HOME/repos/miapp'; claude; print -r -- FIN"
   [ "$status" -eq 0 ]
   [[ "$output" == *"$(printf '\033]11;#171b12\007')"* ]]
-  [[ "$output" == *"$(printf '\033]111\007')" ]]
+  [[ "$output" == *"$(printf '\033]111\007')FIN"* ]]
 }
 
 @test "una cuenta equivocada no tine nada" {
@@ -111,13 +115,17 @@ FALSO
 }
 
 @test "despinta aunque Claude salga con codigo distinto de cero" {
+  # El reset tiene que salir ANTES de que la shell muera, o el test no
+  # distingue entre "el bloque always despinto" y "la shell se cerro y lo
+  # recogio la red del zshexit". Sin esta marca, despintar solo cuando Claude
+  # sale bien pasaria verde.
   make_profile ".claude-work" "ricardo@empresa.com"
   cat > "$FAKE_BIN/claude" <<'FALSO'
 #!/bin/sh
 exit 3
 FALSO
   chmod +x "$FAKE_BIN/claude"
-  run_zsh "cd '$HOME/repos/miapp'; claude"
+  run_zsh "cd '$HOME/repos/miapp'; claude; rc=\$?; print -r -- FIN; exit \$rc"
   [ "$status" -eq 3 ]
-  [[ "$output" == *"$(printf '\033]111\007')" ]]
+  [[ "$output" == *"$(printf '\033]111\007')FIN"* ]]
 }

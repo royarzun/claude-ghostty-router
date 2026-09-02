@@ -53,15 +53,19 @@ claude() {
     fi
     rc=$?
   } always {
-    # `always` y no la linea siguiente: si Claude muere por SIGINT, zsh aborta
-    # el resto de la funcion y el fondo se quedaria tenido. Por lo mismo rc
-    # arranca en 0: en ese camino nunca llega a asignarse.
+    # `always` y no la linea siguiente: verificado con un zsh interactivo real,
+    # si Claude muere por Ctrl-C zsh aborta el resto de la funcion y sin este
+    # bloque el fondo se queda tenido hasta que se cierre el tab.
     if [[ -n $_car_tinted ]]; then
       claude-account _untint
       _car_tinted=
     fi
   }
 
+  # zsh ya propaga el estado del try-list por su cuenta, pero se devuelve
+  # explicito: asi el contrato no depende de esa sutileza ni de que nadie
+  # anada una linea despues del bloque. En el camino del Ctrl-C no se llega
+  # aqui, y de ahi el rc=0 de arriba.
   return $rc
 }
 
