@@ -48,6 +48,24 @@ _car_cleanup() {
   print -rn -- $'\e]111\a'
 }
 
+# Sustituye a `claude` solo en sesiones de Ghostty. Toda la autoridad para negar
+# el arranque vive aqui: si _launch-check falla, no se ejecuta nada.
+claude() {
+  local config_dir rc
+  config_dir=$(claude-account _launch-check "$PWD") || return $?
+
+  if [[ -n $config_dir ]]; then
+    CLAUDE_CONFIG_DIR=$config_dir command claude "$@"
+  else
+    command claude "$@"
+  fi
+  rc=$?
+
+  # Claude Code toca el titulo mientras corre: hay que devolverlo a su sitio.
+  _car_paint
+  return $rc
+}
+
 add-zsh-hook precmd _car_paint
 add-zsh-hook zshexit _car_cleanup
 
