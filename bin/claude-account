@@ -1,0 +1,288 @@
+#!/usr/bin/env bash
+# claude-account — inspeccion y control del enrutado de cuentas Claude.
+set -u
+
+# Se instala como symlink en ~/.local/bin, y macOS no tiene `readlink -f`:
+# hay que seguir la cadena a mano para encontrar las librerias del repo.
+car_self="${BASH_SOURCE[0]}"
+while [ -L "$car_self" ]; do
+  car_link_dir="$(cd "$(dirname "$car_self")" && pwd)"
+  car_self="$(readlink "$car_self")"
+  case "$car_self" in
+    /*) ;;
+    *) car_self="$car_link_dir/$car_self" ;;
+  esac
+done
+CAR_ROOT_DIR="$(cd "$(dirname "$car_self")/.." && pwd)"
+
+. "$CAR_ROOT_DIR/lib/config.sh"
+. "$CAR_ROOT_DIR/lib/resolve.sh"
+. "$CAR_ROOT_DIR/lib/identity.sh"
+. "$CAR_ROOT_DIR/lib/ghostty.sh"
+
+CAR_CONF="${CAR_CONF:-$HOME/.config/claude-ghostty-router/routes.conf}"
+
+# _surface <directorio>
+# Emite los escapes que marcan esta superficie. Nunca falla: el pintado informa,
+# no decide. Un routes.conf roto se ve en el titulo; quien bloquea es el shim.
+cmd_surface() {
+  local dir="${1:-$PWD}" record profile label pdir pglob color
+
+  [ -f "$CAR_CONF" ] || return 0
+
+  if ! car_load_config "$CAR_CONF" 2>/dev/null; then
+    ghostty_title "⚠ routes.conf invalido"
+    ghostty_bg "-"
+    return 0
+  fi
+
+  if ! record="$(resolve_route "$dir" 2>/dev/null)"; then
+    ghostty_title "⚠ routes.conf invalido"
+    ghostty_bg "-"
+    return 0
+  fi
+
+  # pdir/pglob son campos del registro que este comando no necesita.
+  # shellcheck disable=SC2034
+  IFS=$'\t' read -r profile label pdir pglob color <<< "$record"
+  ghostty_title "$profile · $label"
+  ghostty_bg "$color" || ghostty_bg "-"
+  return 0
+}
+
+# _launch-check <directorio>
+# Exito: imprime el config-dir verificado (o nada si no hay routes.conf).
+# Fallo: explica en stderr y devuelve el codigo del motivo. Sin excepciones:
+# si no se puede verificar, no se arranca.
+# Los CAR_* que se devuelven vienen de lib/config.sh (siempre enteros); este
+# archivo se analiza aislado y no se ve ese origen, por eso cada
+# `return $CAR_*` sin comillas se marca como sospechoso.
+# shellcheck disable=SC2086
+cmd_launch_check() {
+  local dir="${1:-$PWD}" record profile label config_dir glob color email status default_dir
+
+  [ -f "$CAR_CONF" ] || return 0
+
+  car_load_config "$CAR_CONF" || return $CAR_ECONFIG
+  record="$(resolve_route "$dir")" || return $CAR_ECONFIG
+  # color no se usa en esta ruta: solo hace falta para pintar la superficie.
+  # shellcheck disable=SC2034
+  IFS=$'\t' read -r profile label config_dir glob color <<< "$record"
+
+  # Claude Code usa dos layouts distintos segun CLAUDE_CONFIG_DIR este o no
+  # puesta: sin ella, los datos viven en ~/.claude/ pero la config principal
+  # es el hermano ~/.claude.json; con ella puesta a <dir>, la config principal
+  # pasa a ser <dir>/.claude.json, DENTRO del directorio (ver
+  # docs/experiments/2026-09-01-identity-layout.md). Cuando el perfil resuelto
+  # es justo el que Claude Code usaria sin ninguna variable, exportarla de
+  # todos modos le esconderia al usuario su propio ~/.claude.json de toda la
+  # vida, con proyectos, MCP e historial reales, como si el perfil fuera
+  # nuevo. Por eso aqui no se imprime nada: router.zsh ya sabe arrancar
+  # `claude` a secas cuando _launch-check no imprime config-dir.
+  default_dir="$(car_strip_trailing_slash "$CAR_HOME/.claude")"
+
+  if [ "$glob" = "-" ]; then
+    [ "$config_dir" = "$default_dir" ] || printf '%s' "$config_dir"
+    return 0
+  fi
+
+  email="$(identity_email "$config_dir")"
+  status=$?
+  if [ $status -ne 0 ]; then
+    echo "claude-account: no arranco Claude en $label (perfil '$profile')." >&2
+    echo "  Arregla la sesion con: claude-account login $profile" >&2
+    return $status
+  fi
+
+  if ! identity_matches "$email" "$glob"; then
+    echo "claude-account: cuenta equivocada para $label (perfil '$profile')." >&2
+    echo "  esperaba: $glob" >&2
+    echo "  logueada: $email" >&2
+    echo "  Arreglalo con: claude-account login $profile" >&2
+    return $CAR_EMISMATCH
+  fi
+
+  [ "$config_dir" = "$default_dir" ] || printf '%s' "$config_dir"
+  return 0
+}
+
+cmd_which() {
+  local dir="${1:-$PWD}" record profile label pdir pglob color
+  car_load_config "$CAR_CONF" || return $CAR_ECONFIG
+  record="$(resolve_route "$dir")" || return $CAR_ECONFIG
+  # shellcheck disable=SC2034
+  IFS=$'\t' read -r profile label pdir pglob color <<< "$record"
+  printf '%s\n' "$profile"
+}
+
+cmd_routes() {
+  local i
+  car_load_config "$CAR_CONF" || return $CAR_ECONFIG
+  if [ "${#CAR_R_PATH[@]}" -eq 0 ]; then
+    echo "(sin rutas: todo cae en el perfil por defecto '${CAR_P_NAME[0]}')"
+    return 0
+  fi
+  for ((i = 0; i < ${#CAR_R_PATH[@]}; i++)); do
+    printf '%-50s %s\n' "${CAR_R_PATH[$i]}" "${CAR_R_PROFILE[$i]}"
+  done
+}
+
+cmd_status() {
+  local i email status record profile here pdir pglob color
+
+  car_load_config "$CAR_CONF" || return $CAR_ECONFIG
+
+  echo "Perfiles:"
+  for ((i = 0; i < ${#CAR_P_NAME[@]}; i++)); do
+    email="$(identity_email "${CAR_P_DIR[$i]}" 2>/dev/null)"
+    status=$?
+    if [ $status -eq 0 ]; then
+      printf '  %-10s %-40s %s\n' "${CAR_P_NAME[$i]}" "${CAR_P_DIR[$i]}" "$email"
+    else
+      printf '  %-10s %-40s %s\n' "${CAR_P_NAME[$i]}" "${CAR_P_DIR[$i]}" "(sin sesion)"
+    fi
+  done
+
+  record="$(resolve_route "$PWD")" || return $CAR_ECONFIG
+  # shellcheck disable=SC2034
+  IFS=$'\t' read -r profile here pdir pglob color <<< "$record"
+  echo
+  echo "Directorio actual: $here -> perfil '$profile'"
+}
+
+cmd_login() {
+  local name="${1:-}" index dir
+  if [ -z "$name" ]; then
+    echo "claude-account: uso: claude-account login <perfil>" >&2
+    return $CAR_ECONFIG
+  fi
+  car_load_config "$CAR_CONF" || return $CAR_ECONFIG
+  if ! index="$(car_profile_index "$name")"; then
+    echo "claude-account: no existe el perfil '$name' en $CAR_CONF" >&2
+    return $CAR_ECONFIG
+  fi
+  dir="${CAR_P_DIR[$index]}"
+  mkdir -p "$dir"
+  echo "claude-account: abriendo Claude en el perfil '$name' ($dir)."
+  echo "  Dentro, ejecuta /login para iniciar sesion. Luego sal con /exit."
+  # Unico camino que no verifica, y tiene que serlo: su proposito es crear la
+  # sesion que despues se verifica. Un perfil vacio nunca podria loguearse.
+  CLAUDE_CONFIG_DIR="$dir" command claude
+}
+
+cmd_help() {
+  cat <<'AYUDA'
+claude-account — enrutado de cuentas Claude por carpeta, dentro de Ghostty
+
+  claude-account                estado de los perfiles y del directorio actual
+  claude-account routes         mapa carpeta -> perfil
+  claude-account which [dir]    perfil de un directorio
+  claude-account check          diagnostico completo
+  claude-account login <perfil> inicia sesion en un perfil
+  claude-account mark           repinta la superficie actual
+AYUDA
+}
+
+CAR_GHOSTTY_CONF="${CAR_GHOSTTY_CONF:-$HOME/Library/Application Support/com.mitchellh.ghostty/config.ghostty}"
+
+car_check_ok=0
+car_check_bad=0
+
+car_ok()   { printf '  ok   %s\n' "$1"; car_check_ok=$((car_check_ok + 1)); }
+car_fail() { printf '  FALLA %s\n' "$1"; car_check_bad=$((car_check_bad + 1)); }
+
+cmd_check() {
+  local i j email status expires now dias creds
+
+  car_check_ok=0
+  car_check_bad=0
+
+  echo "Configuracion"
+  if car_load_config "$CAR_CONF" 2>/dev/null; then
+    car_ok "routes.conf valido (${#CAR_P_NAME[@]} perfiles, ${#CAR_R_PATH[@]} rutas)"
+  else
+    car_fail "routes.conf invalido o ausente: $CAR_CONF"
+    car_load_config "$CAR_CONF"
+    return 1
+  fi
+
+  echo "Sesion"
+  if [ -n "${CAR_ROUTER_LOADED:-}" ]; then
+    car_ok "el router esta cargado en esta shell"
+  else
+    car_fail "el router no esta cargado en esta shell (abre un tab nuevo, o revisa ~/.zshrc)"
+  fi
+
+  if [ -f "$CAR_GHOSTTY_CONF" ]; then
+    if grep -q 'no-title' "$CAR_GHOSTTY_CONF"; then
+      car_ok "Ghostty tiene no-title en shell-integration-features"
+    else
+      car_fail "Ghostty reescribira el titulo: falta no-title en shell-integration-features"
+    fi
+  else
+    car_fail "no encuentro la config de Ghostty en $CAR_GHOSTTY_CONF"
+  fi
+
+  echo "Perfiles"
+  for ((i = 0; i < ${#CAR_P_NAME[@]}; i++)); do
+    email="$(identity_email "${CAR_P_DIR[$i]}" 2>/dev/null)"
+    status=$?
+    if [ $status -ne 0 ]; then
+      car_fail "${CAR_P_NAME[$i]}: sin sesion -> claude-account login ${CAR_P_NAME[$i]}"
+      continue
+    fi
+    if identity_matches "$email" "${CAR_P_GLOB[$i]}"; then
+      car_ok "${CAR_P_NAME[$i]}: $email"
+    else
+      car_fail "${CAR_P_NAME[$i]}: $email no coincide con ${CAR_P_GLOB[$i]}"
+    fi
+
+    creds="${CAR_P_DIR[$i]}/.credentials.json"
+    if [ -f "$creds" ] && expires="$(python3 "$CAR_ROOT_DIR/lib/expiry.py" "$creds" 2>/dev/null)"; then
+      now=$(( $(date +%s) * 1000 ))
+      if [ "$expires" -lt "$now" ]; then
+        echo "       (token vencido; Claude lo renovara al arrancar)"
+      else
+        dias=$(( (expires - now) / 86400000 ))
+        [ "$dias" -le 3 ] && echo "       (el token vence en $dias dias)"
+      fi
+    fi
+  done
+
+  for ((i = 0; i < ${#CAR_P_NAME[@]}; i++)); do
+    for ((j = i + 1; j < ${#CAR_P_NAME[@]}; j++)); do
+      local a b
+      a="$(identity_email "${CAR_P_DIR[$i]}" 2>/dev/null)" || continue
+      b="$(identity_email "${CAR_P_DIR[$j]}" 2>/dev/null)" || continue
+      if [ "$a" = "$b" ]; then
+        car_fail "${CAR_P_NAME[$i]} y ${CAR_P_NAME[$j]} usan la misma cuenta ($a)"
+      fi
+    done
+  done
+
+  echo
+  echo "$car_check_ok en orden, $car_check_bad por arreglar"
+  [ "$car_check_bad" -eq 0 ]
+}
+
+main() {
+  local command="${1:-status}"
+  shift || true
+  case "$command" in
+    _surface)      cmd_surface "$@" ;;
+    _launch-check) cmd_launch_check "$@" ;;
+    which)         cmd_which "$@" ;;
+    routes)        cmd_routes "$@" ;;
+    status)        cmd_status "$@" ;;
+    login)         cmd_login "$@" ;;
+    check)         cmd_check "$@" ;;
+    mark)          cmd_surface "$PWD" ;;
+    help|-h|--help) cmd_help ;;
+    *)
+      echo "claude-account: comando desconocido '$command'" >&2
+      return 1
+      ;;
+  esac
+}
+
+main "$@"
