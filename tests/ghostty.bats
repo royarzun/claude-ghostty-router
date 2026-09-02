@@ -44,3 +44,20 @@ setup() {
   [ "$status" -eq 0 ]
   [ "$output" = "$(printf '\033]111\007')" ]
 }
+
+@test "el fondo sale en exactamente 13 bytes, sin sobras" {
+  # bats recorta los saltos finales de $output, y "$(printf ...)" tambien, asi
+  # que ninguna asercion sobre $output puede ver un byte de mas despues del
+  # BEL. Y un byte de mas ahi es lo unico que esta funcion no puede permitirse:
+  # va crudo a la terminal, y un salto movería el tab una linea en cada
+  # arranque de Claude.
+  run bash -c ". '$CAR_ROOT/lib/ghostty.sh'; ghostty_bg '#171b12' | wc -c"
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s' "$output" | tr -d ' ')" = "13" ]
+}
+
+@test "el reset sale en exactamente 6 bytes, sin sobras" {
+  run bash -c ". '$CAR_ROOT/lib/ghostty.sh'; ghostty_bg - | wc -c"
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s' "$output" | tr -d ' ')" = "6" ]
+}
