@@ -79,9 +79,11 @@ dos justo después del nombre del perfil.
 El orden importa: `badge_bar` nace en la Task 2 antes de que la Task 3 lo use, y `badge_color`
 no se borra hasta la Task 4, cuando ya no lo llama nadie. **Cada commit deja la suite verde.**
 
-Cuenta de tests esperada al terminar cada tarea: 129, 140, 140, 135, 135.
+Cuenta de tests esperada al terminar cada tarea: 129, 140, 141, 136, 136.
 
-> La Task 2 acabó en 140 y no en 135: la revisión de calidad pidió cinco tests más de
+> Las cuentas subieron sobre lo planeado porque las revisiones de calidad pidieron tests de
+> más: la Task 2 acabó en 140 y no en 135, y la Task 3 en 141 y no en 140 —un caso que faltaba,
+> la línea sin carpeta con un perfil que sí tiene color—. En la Task 2 fueron cinco tests de
 > endurecimiento —umbral exacto de luminancia, guardia numérico de `badge_fg`, color en
 > mayúsculas, filtrado de control con la barra pintada, y canal con cero a la izquierda— más
 > el guardia y la constante `CAR_BADGE_LUM` que los motivan. Las cuentas de abajo ya lo
@@ -490,7 +492,7 @@ Expected: sin resultados. (En `docs/` sí sigue apareciendo: las specs viejas so
 se reescriben.)
 
 Run: `bats tests/ && shellcheck -s bash bin/claude-account install.sh lib/*.sh`
-Expected: **135 tests** en verde, shellcheck sin salida.
+Expected: **136 tests** en verde, shellcheck sin salida.
 
 - [ ] **Step 7: Commit**
 
@@ -614,7 +616,7 @@ Run: `grep -n 'es texto, no un tinte' README.md routes.conf.example`
 Expected: sin resultados.
 
 Run: `bats tests/`
-Expected: **135 tests** en verde. (Ningún test lee el README, pero la suite se corre igual
+Expected: **136 tests** en verde. (Ningún test lee el README, pero la suite se corre igual
 antes de cada commit.)
 
 - [ ] **Step 8: Commit**
