@@ -94,12 +94,95 @@ cmd_launch_check() {
   return 0
 }
 
+cmd_which() {
+  local dir="${1:-$PWD}" record profile label pdir pglob color
+  car_load_config "$CAR_CONF" || return $CAR_ECONFIG
+  record="$(resolve_route "$dir")" || return $CAR_ECONFIG
+  # shellcheck disable=SC2034
+  IFS=$'\t' read -r profile label pdir pglob color <<< "$record"
+  printf '%s\n' "$profile"
+}
+
+cmd_routes() {
+  local i
+  car_load_config "$CAR_CONF" || return $CAR_ECONFIG
+  if [ "${#CAR_R_PATH[@]}" -eq 0 ]; then
+    echo "(sin rutas: todo cae en el perfil por defecto '${CAR_P_NAME[0]}')"
+    return 0
+  fi
+  for ((i = 0; i < ${#CAR_R_PATH[@]}; i++)); do
+    printf '%-50s %s\n' "${CAR_R_PATH[$i]}" "${CAR_R_PROFILE[$i]}"
+  done
+}
+
+cmd_status() {
+  local i email status record profile here pdir pglob color
+
+  car_load_config "$CAR_CONF" || return $CAR_ECONFIG
+
+  echo "Perfiles:"
+  for ((i = 0; i < ${#CAR_P_NAME[@]}; i++)); do
+    email="$(identity_email "${CAR_P_DIR[$i]}" 2>/dev/null)"
+    status=$?
+    if [ $status -eq 0 ]; then
+      printf '  %-10s %-40s %s\n' "${CAR_P_NAME[$i]}" "${CAR_P_DIR[$i]}" "$email"
+    else
+      printf '  %-10s %-40s %s\n' "${CAR_P_NAME[$i]}" "${CAR_P_DIR[$i]}" "(sin sesion)"
+    fi
+  done
+
+  record="$(resolve_route "$PWD")" || return $CAR_ECONFIG
+  # shellcheck disable=SC2034
+  IFS=$'\t' read -r profile here pdir pglob color <<< "$record"
+  echo
+  echo "Directorio actual: $here -> perfil '$profile'"
+}
+
+cmd_login() {
+  local name="${1:-}" index dir
+  if [ -z "$name" ]; then
+    echo "claude-account: uso: claude-account login <perfil>" >&2
+    return $CAR_ECONFIG
+  fi
+  car_load_config "$CAR_CONF" || return $CAR_ECONFIG
+  if ! index="$(car_profile_index "$name")"; then
+    echo "claude-account: no existe el perfil '$name' en $CAR_CONF" >&2
+    return $CAR_ECONFIG
+  fi
+  dir="${CAR_P_DIR[$index]}"
+  mkdir -p "$dir"
+  echo "claude-account: abriendo Claude en el perfil '$name' ($dir)."
+  echo "  Dentro, ejecuta /login para iniciar sesion. Luego sal con /exit."
+  # Unico camino que no verifica, y tiene que serlo: su proposito es crear la
+  # sesion que despues se verifica. Un perfil vacio nunca podria loguearse.
+  CLAUDE_CONFIG_DIR="$dir" command claude
+}
+
+cmd_help() {
+  cat <<'AYUDA'
+claude-account — enrutado de cuentas Claude por carpeta, dentro de Ghostty
+
+  claude-account                estado de los perfiles y del directorio actual
+  claude-account routes         mapa carpeta -> perfil
+  claude-account which [dir]    perfil de un directorio
+  claude-account check          diagnostico completo
+  claude-account login <perfil> inicia sesion en un perfil
+  claude-account mark           repinta la superficie actual
+AYUDA
+}
+
 main() {
   local command="${1:-status}"
   shift || true
   case "$command" in
-    _surface) cmd_surface "$@" ;;
+    _surface)      cmd_surface "$@" ;;
     _launch-check) cmd_launch_check "$@" ;;
+    which)         cmd_which "$@" ;;
+    routes)        cmd_routes "$@" ;;
+    status)        cmd_status "$@" ;;
+    login)         cmd_login "$@" ;;
+    mark)          cmd_surface "$PWD" ;;
+    help|-h|--help) cmd_help ;;
     *)
       echo "claude-account: comando desconocido '$command'" >&2
       return 1
