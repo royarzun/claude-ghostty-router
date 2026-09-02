@@ -12,7 +12,7 @@ setup() {
   car_load_config "$CAR_CONF"
 }
 
-# resolve_route imprime: perfil<TAB>proyecto<TAB>dir<TAB>glob<TAB>color
+# resolve_route imprime: perfil<TAB>proyecto<TAB>dir<TAB>glob<TAB>color<TAB>fondo
 
 @test "coincidencia exacta de ruta" {
   mkdir -p "$HOME/repos/proyecto-uno"
@@ -49,10 +49,10 @@ setup() {
   [[ "$output" == personal$'\t'sitio$'\t'* ]]
 }
 
-@test "emite el dir, el glob y el color del perfil resuelto" {
+@test "emite el dir, el glob, el color y el fondo del perfil resuelto" {
   mkdir -p "$HOME/repos/proyecto-uno"
   run resolve_route "$HOME/repos/proyecto-uno"
-  [ "$output" = "$(printf 'work\tproyecto-uno\t%s/.claude-work\t*@empresa.com\t#171b12' "$HOME")" ]
+  [ "$output" = "$(printf 'work\tproyecto-uno\t%s/.claude-work\t*@empresa.com\t#171b12\t-' "$HOME")" ]
 }
 
 @test "el proyecto de una ruta con glob sale del directorio, no del patron" {

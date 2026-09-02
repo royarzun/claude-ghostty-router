@@ -8,14 +8,16 @@ setup() {
 @test "carga perfiles y rutas en arrays paralelos" {
   write_conf \
     "profile personal ~/.claude tu-email@ejemplo.com -" \
-    "profile work ~/.claude-work *@empresa.com #171b12" \
+    "profile work ~/.claude-work *@empresa.com #8fbc5a #171b12" \
     "route ~/repos/uno work"
   car_load_config "$CAR_CONF"
   [ "${#CAR_P_NAME[@]}" -eq 2 ]
   [ "${CAR_P_NAME[0]}" = "personal" ]
   [ "${CAR_P_DIR[1]}" = "$HOME/.claude-work" ]
   [ "${CAR_P_GLOB[1]}" = "*@empresa.com" ]
-  [ "${CAR_P_COLOR[1]}" = "#171b12" ]
+  [ "${CAR_P_COLOR[1]}" = "#8fbc5a" ]
+  [ "${CAR_P_TINT[1]}" = "#171b12" ]
+  [ "${CAR_P_TINT[0]}" = "-" ]
   [ "${#CAR_R_PATH[@]}" -eq 1 ]
   [ "${CAR_R_PROFILE[0]}" = "work" ]
 }
