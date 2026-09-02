@@ -53,11 +53,11 @@ setup() {
 }
 
 @test "perfil sin glob de email: no verifica y devuelve su config-dir" {
-  write_conf "profile personal ~/.claude - -" "route ~/notas personal"
-  make_profile ".claude"
+  write_conf "profile personal ~/.claude-other - -" "route ~/notas personal"
+  make_profile ".claude-other"
   run "$CA" _launch-check "$HOME/notas"
   [ "$status" -eq 0 ]
-  [ "$output" = "$HOME/.claude" ]
+  [ "$output" = "$HOME/.claude-other" ]
 }
 
 @test "el perfil por defecto tambien se verifica" {
@@ -65,4 +65,34 @@ setup() {
   run "$CA" _launch-check "$HOME/notas"
   [ "$status" -eq 5 ]
   [[ "$output" == *"claude-account login personal"* ]]
+}
+
+@test "el perfil por defecto de Claude no fuerza CLAUDE_CONFIG_DIR" {
+  # Con CLAUDE_CONFIG_DIR puesto, Claude Code busca <dir>/.claude.json; sin la
+  # variable usa el hermano ~/.claude.json. Forzarla para el directorio por
+  # defecto le esconderia su propia configuracion al usuario.
+  write_conf "profile personal ~/.claude royarzun@gmail.com -" "route ~/notas personal"
+  make_profile ".claude" "royarzun@gmail.com"
+  run "$CA" _launch-check "$HOME/notas"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "un perfil que no es el por defecto si define CLAUDE_CONFIG_DIR" {
+  write_conf \
+    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile work ~/.claude-work *@empresa.com #171b12" \
+    "route ~/repos/miapp work"
+  make_profile ".claude-work" "ricardo@empresa.com"
+  run "$CA" _launch-check "$HOME/repos/miapp"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$HOME/.claude-work" ]
+}
+
+@test "el perfil por defecto se sigue verificando aunque no exporte la variable" {
+  write_conf "profile personal ~/.claude royarzun@gmail.com -" "route ~/notas personal"
+  make_profile ".claude" "otro@gmail.com"
+  run "$CA" _launch-check "$HOME/notas"
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"cuenta equivocada"* ]]
 }

@@ -59,7 +59,7 @@ cmd_surface() {
 # `return $CAR_*` sin comillas se marca como sospechoso.
 # shellcheck disable=SC2086
 cmd_launch_check() {
-  local dir="${1:-$PWD}" record profile label config_dir glob color email status
+  local dir="${1:-$PWD}" record profile label config_dir glob color email status default_dir
 
   [ -f "$CAR_CONF" ] || return 0
 
@@ -69,8 +69,20 @@ cmd_launch_check() {
   # shellcheck disable=SC2034
   IFS=$'\t' read -r profile label config_dir glob color <<< "$record"
 
+  # Claude Code usa dos layouts distintos segun CLAUDE_CONFIG_DIR este o no
+  # puesta: sin ella, los datos viven en ~/.claude/ pero la config principal
+  # es el hermano ~/.claude.json; con ella puesta a <dir>, la config principal
+  # pasa a ser <dir>/.claude.json, DENTRO del directorio (ver
+  # docs/experiments/2026-09-01-identity-layout.md). Cuando el perfil resuelto
+  # es justo el que Claude Code usaria sin ninguna variable, exportarla de
+  # todos modos le esconderia al usuario su propio ~/.claude.json de toda la
+  # vida, con proyectos, MCP e historial reales, como si el perfil fuera
+  # nuevo. Por eso aqui no se imprime nada: router.zsh ya sabe arrancar
+  # `claude` a secas cuando _launch-check no imprime config-dir.
+  default_dir="$(car_strip_trailing_slash "$CAR_HOME/.claude")"
+
   if [ "$glob" = "-" ]; then
-    printf '%s' "$config_dir"
+    [ "$config_dir" = "$default_dir" ] || printf '%s' "$config_dir"
     return 0
   fi
 
@@ -90,7 +102,7 @@ cmd_launch_check() {
     return $CAR_EMISMATCH
   fi
 
-  printf '%s' "$config_dir"
+  [ "$config_dir" = "$default_dir" ] || printf '%s' "$config_dir"
   return 0
 }
 
