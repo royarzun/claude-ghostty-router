@@ -10,21 +10,21 @@ setup() {
   write_conf "profile work ~/.claude-work *@empresa.com #171b12"
   run config_parse "$CAR_CONF"
   [ "$status" -eq 0 ]
-  [ "$output" = "$(printf 'profile\twork\t%s/.claude-work\t*@empresa.com\t#171b12' "$HOME")" ]
+  [ "$output" = "$(printf 'profile\twork\t%s/.claude-work\t*@empresa.com\t#171b12\t-' "$HOME")" ]
 }
 
 @test "los campos opcionales quedan en guion" {
   write_conf "profile personal ~/.claude"
   run config_parse "$CAR_CONF"
   [ "$status" -eq 0 ]
-  [ "$output" = "$(printf 'profile\tpersonal\t%s/.claude\t-\t-' "$HOME")" ]
+  [ "$output" = "$(printf 'profile\tpersonal\t%s/.claude\t-\t-\t-' "$HOME")" ]
 }
 
 @test "ignora comentarios de linea completa, lineas vacias y espacios sobrantes" {
   write_conf "# comentario" "" "   # comentario indentado" "   profile personal ~/.claude   " "  "
   run config_parse "$CAR_CONF"
   [ "$status" -eq 0 ]
-  [ "$output" = "$(printf 'profile\tpersonal\t%s/.claude\t-\t-' "$HOME")" ]
+  [ "$output" = "$(printf 'profile\tpersonal\t%s/.claude\t-\t-\t-' "$HOME")" ]
 }
 
 @test "un # a media linea es parte del campo, no un comentario" {
@@ -32,7 +32,7 @@ setup() {
   write_conf "profile work ~/.claude-work *@empresa.com #171b12"
   run config_parse "$CAR_CONF"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"#171b12" ]]
+  [[ "$output" == *"#171b12"* ]]
 }
 
 @test "parsea rutas conservando el glob sin expandir" {
@@ -64,6 +64,27 @@ setup() {
   [[ "$output" == *"color"* ]]
 }
 
+@test "parsea el color de fondo como quinto campo" {
+  write_conf "profile work ~/.claude-work *@empresa.com #8fbc5a #171b12"
+  run config_parse "$CAR_CONF"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(printf 'profile\twork\t%s/.claude-work\t*@empresa.com\t#8fbc5a\t#171b12' "$HOME")" ]
+}
+
+@test "el fondo ausente queda en guion: las configs viejas siguen valiendo" {
+  write_conf "profile work ~/.claude-work *@empresa.com #8fbc5a"
+  run config_parse "$CAR_CONF"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"$(printf '#8fbc5a\t-')" ]]
+}
+
+@test "rechaza un fondo mal formado" {
+  write_conf "profile work ~/.claude-work *@empresa.com #8fbc5a verde"
+  run config_parse "$CAR_CONF"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"fondo"* ]]
+}
+
 @test "rechaza una ruta sin perfil" {
   write_conf "profile work ~/.claude-work" "route ~/repos/algo"
   run config_parse "$CAR_CONF"
@@ -71,7 +92,7 @@ setup() {
 }
 
 @test "rechaza campos de mas" {
-  write_conf "profile work ~/.claude-work *@empresa.com #171b12 sobra"
+  write_conf "profile work ~/.claude-work *@empresa.com #171b12 #0a0a0a sobra"
   run config_parse "$CAR_CONF"
   [ "$status" -eq 2 ]
 }
@@ -85,7 +106,7 @@ setup() {
   printf 'profile personal ~/.claude\r\nroute ~/repos/uno personal\r\n' > "$CAR_CONF"
   run config_parse "$CAR_CONF"
   [ "$status" -eq 0 ]
-  [ "$output" = "$(printf 'profile\tpersonal\t%s/.claude\t-\t-\nroute\t%s/repos/uno\tpersonal' "$HOME" "$HOME")" ]
+  [ "$output" = "$(printf 'profile\tpersonal\t%s/.claude\t-\t-\t-\nroute\t%s/repos/uno\tpersonal' "$HOME" "$HOME")" ]
 }
 
 @test "los errores van a stderr, no al flujo de registros" {

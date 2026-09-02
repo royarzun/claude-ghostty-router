@@ -48,20 +48,37 @@ car_strip_trailing_slash() {
   printf '%s' "$valor"
 }
 
+# car_check_color <valor> <archivo> <linea> <etiqueta>
+# "-" o #rrggbb pasan. Cualquier otra cosa aborta nombrando el campo: hay dos
+# colores por perfil y el mensaje tiene que decir cual de los dos esta mal.
+car_check_color() {
+  case "$1" in
+    -) return 0 ;;
+    '#'[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]) return 0 ;;
+  esac
+  echo "claude-account: $2 linea $3: $4 invalido '$1' (usa #rrggbb o -)" >&2
+  return 1
+}
+
 # config_parse <archivo>
 # Imprime, en orden de aparicion:
-#   profile<TAB><nombre><TAB><dir><TAB><email-glob><TAB><color>
+#   profile<TAB><nombre><TAB><dir><TAB><email-glob><TAB><color><TAB><fondo>
 #   route<TAB><ruta><TAB><perfil>
 # Los campos opcionales ausentes salen como "-".
 config_parse() {
   local file="$1"
-  local lineno=0 raw kind rest name dir glob color rpath rprof extra
+  local lineno=0 raw kind rest name dir glob color tint rpath rprof extra
 
   if [ ! -r "$file" ]; then
     echo "claude-account: no puedo leer $file" >&2
     return $CAR_ECONFIG
   fi
 
+  # car_check_color solo usa $file para armar el mensaje de error (nunca lo lee
+  # ni lo escribe), pero shellcheck no distingue eso del `done < "$file"` de
+  # aqui abajo y sospecha una colision de lectura/escritura sobre el mismo
+  # archivo.
+  # shellcheck disable=SC2094
   while IFS= read -r raw || [ -n "$raw" ]; do
     lineno=$((lineno + 1))
     # Recorta el retorno de carro de finales de linea CRLF: sin esto, "dir" o
@@ -81,7 +98,7 @@ config_parse() {
         # detectar aqui (el separador ya se consumio) y se acepta como
         # limitacion; el sintoma aguas abajo es un config-dir inexistente, que
         # bloquea el arranque mostrando la ruta truncada.
-        read -r name dir glob color extra <<< "$rest"
+        read -r name dir glob color tint extra <<< "$rest"
         if [ -z "$name" ] || [ -z "$dir" ]; then
           echo "claude-account: $file linea $lineno: profile necesita <nombre> <dir>" >&2
           return $CAR_ECONFIG
@@ -92,15 +109,10 @@ config_parse() {
         fi
         glob="${glob:--}"
         color="${color:--}"
-        case "$color" in
-          -) ;;
-          '#'[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]) ;;
-          *)
-            echo "claude-account: $file linea $lineno: color invalido '$color' (usa #rrggbb o -)" >&2
-            return $CAR_ECONFIG
-            ;;
-        esac
-        printf 'profile\t%s\t%s\t%s\t%s\n' "$name" "$(car_strip_trailing_slash "$(car_expand_tilde "$dir")")" "$glob" "$color"
+        tint="${tint:--}"
+        car_check_color "$color" "$file" "$lineno" "color" || return $CAR_ECONFIG
+        car_check_color "$tint" "$file" "$lineno" "fondo" || return $CAR_ECONFIG
+        printf 'profile\t%s\t%s\t%s\t%s\t%s\n' "$name" "$(car_strip_trailing_slash "$(car_expand_tilde "$dir")")" "$glob" "$color" "$tint"
         ;;
       route)
         read -r rpath rprof extra <<< "$rest"
