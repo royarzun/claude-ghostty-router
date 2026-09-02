@@ -225,6 +225,9 @@ pisa un `statusLine` que no haya puesto él.
   sigue funcionando.
 - **El badge solo se ve en el split enfocado.** Un tab en reposo no dice a qué cuenta
   pertenece: para eso haría falta el título, y sostenerlo cuesta el título de Ghostty.
+  Teñir el fondo del tab mientras corre la sesión llegó a implementarse, con su propio campo
+  en `routes.conf`, y se descartó después de probarlo (revertido en `120bf6b`). Si vuelves a
+  considerarlo, ahí está hecho y con tests.
 
 ## Desarrollo
 
