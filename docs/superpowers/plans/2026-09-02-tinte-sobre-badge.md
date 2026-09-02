@@ -473,12 +473,15 @@ setup() {
 
 @test "tint usa el fondo, no el color del badge" {
   # Los dos campos existen justo porque un tono legible como badge es inusable
-  # como fondo. Confundirlos aqui cegaria el tab.
+  # como fondo. Confundirlos aqui cegaria el tab, y el badge se volveria
+  # ilegible: la asercion negativa fija cual de los dos sale.
   write_conf \
     "profile work ~/.claude-work *@empresa.com #8fbc5a #171b12" \
     "route ~/repos/miapp work"
   mkdir -p "$HOME/repos/miapp"
   run "$CA" _tint "$HOME/repos/miapp"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(printf '\033]11;#171b12\007')" ]
   [[ "$output" != *"8fbc5a"* ]]
 }
 
