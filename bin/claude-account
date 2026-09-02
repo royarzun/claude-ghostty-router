@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# claude-account — inspeccion y control del enrutado de cuentas Claude.
+set -u
+
+# Se instala como symlink en ~/.local/bin, y macOS no tiene `readlink -f`:
+# hay que seguir la cadena a mano para encontrar las librerias del repo.
+car_self="${BASH_SOURCE[0]}"
+while [ -L "$car_self" ]; do
+  car_link_dir="$(cd "$(dirname "$car_self")" && pwd)"
+  car_self="$(readlink "$car_self")"
+  case "$car_self" in
+    /*) ;;
+    *) car_self="$car_link_dir/$car_self" ;;
+  esac
+done
+CAR_ROOT_DIR="$(cd "$(dirname "$car_self")/.." && pwd)"
+
+. "$CAR_ROOT_DIR/lib/config.sh"
+. "$CAR_ROOT_DIR/lib/resolve.sh"
+. "$CAR_ROOT_DIR/lib/identity.sh"
+. "$CAR_ROOT_DIR/lib/ghostty.sh"
+
+CAR_CONF="${CAR_CONF:-$HOME/.config/claude-ghostty-router/routes.conf}"
+
+# _surface <directorio>
+# Emite los escapes que marcan esta superficie. Nunca falla: el pintado informa,
+# no decide. Un routes.conf roto se ve en el titulo; quien bloquea es el shim.
+cmd_surface() {
+  local dir="${1:-$PWD}" record profile label pdir pglob color
+
+  [ -f "$CAR_CONF" ] || return 0
+
+  if ! car_load_config "$CAR_CONF" 2>/dev/null; then
+    ghostty_title "⚠ routes.conf invalido"
+    ghostty_bg "-"
+    return 0
+  fi
+
+  if ! record="$(resolve_route "$dir" 2>/dev/null)"; then
+    ghostty_title "⚠ routes.conf invalido"
+    ghostty_bg "-"
+    return 0
+  fi
+
+  # pdir/pglob son campos del registro que este comando no necesita.
+  # shellcheck disable=SC2034
+  IFS=$'\t' read -r profile label pdir pglob color <<< "$record"
+  ghostty_title "$profile · $label"
+  ghostty_bg "$color" || ghostty_bg "-"
+  return 0
+}
+
+main() {
+  local command="${1:-status}"
+  shift || true
+  case "$command" in
+    _surface) cmd_surface "$@" ;;
+    *)
+      echo "claude-account: comando desconocido '$command'" >&2
+      return 1
+      ;;
+  esac
+}
+
+main "$@"
