@@ -175,8 +175,8 @@ El núcleo es puro: entran datos, salen datos, sin efectos secundarios. Solo `li
 de terminal— y solo el shim decide bloquear.
 
 `shell/router.zsh` se auto-desactiva si `TERM != xterm-ghostty`, así que no afecta a scripts,
-cron ni a la terminal integrada de un editor. No pinta nada ni engancha ningún hook de prompt:
-sustituye a `claude` y nada más.
+cron ni a la terminal integrada de un editor. No engancha ningún hook de `precmd` ni repinta
+en cada prompt: sustituye a `claude`, tiñe el fondo alrededor de esa sesión, y nada más.
 
 **El shell nunca exporta `CLAUDE_CONFIG_DIR` por su cuenta.** La variable se define únicamente
 en el proceso de Claude ya verificado, para que ningún script que esquive la función acabe

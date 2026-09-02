@@ -1,6 +1,6 @@
 # claude-ghostty-router — rutas de carpetas a cuentas Claude.
 #
-#   profile <nombre> <config-dir> [email-glob] [color-del-badge] [color-de-fondo]
+#   profile <nombre> <config-dir> [email-glob] [badge] [fondo]
 #     email-glob: patron que DEBE cumplir la cuenta logueada. "-" = no verificar.
 #     badge:      #rrggbb con el que se pinta el nombre del perfil en el badge
 #                 que se ve dentro de Claude Code. "-" = sin color. Elige un
