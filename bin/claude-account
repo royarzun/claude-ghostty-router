@@ -83,7 +83,9 @@ cmd_statusline() {
   # pasa por badge_sanitize -el perfil tambien, que hasta ahora se saneaba de
   # rebote dentro de badge_color- porque el recorte a 60 va por campo.
   rest=" · $(badge_sanitize "$email")"
-  [ -n "$label" ] && rest="$rest · $(badge_sanitize "$label")"
+  if [ -n "$label" ]; then
+    rest="$rest · $(badge_sanitize "$label")"
+  fi
   badge_bar "$color" "$(badge_sanitize "$profile")" "$rest"
   printf '\n'
   return 0

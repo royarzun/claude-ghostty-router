@@ -106,6 +106,18 @@ barra() {
   [ "$output" = "personal · tu-email@ejemplo.com" ]
 }
 
+@test "sin carpeta la barra tampoco arrastra un separador colgando" {
+  # El unico test con carpeta vacia ("sin JSON valido...") usa el perfil
+  # 'personal', que tiene color '-' y por tanto nunca ejercita badge_bar con
+  # la barra pintada. rest se arma por concatenacion, asi que hay que fijar
+  # aqui, con un perfil que si tiene color, que sin carpeta no queda un " · "
+  # colgando al final y que el fondo se pinta igual.
+  make_profile ".claude-work" "ricardo@empresa.com"
+  CLAUDE_CONFIG_DIR="$HOME/.claude-work" run bash -c "printf 'no soy json' | '$CA' statusline"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(barra "work" " · ricardo@empresa.com")" ]
+}
+
 @test "funciona invocado a traves de un symlink" {
   # Asi es como se instala, y asi es como lo llama el settings.json.
   make_profile ".claude" "tu-email@ejemplo.com"
