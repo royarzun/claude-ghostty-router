@@ -3,14 +3,22 @@
 
 CAR_BADGE_MAX=60
 
-# badge_sanitize <texto>
+# badge_strip <texto> -> el texto sin bytes de control.
 # El badge se arma con un nombre de carpeta y con un email leido de un archivo,
 # y ninguno de los dos es texto de confianza: una carpeta puede llamarse con
 # bytes de control adentro. Claude Code renderiza este texto respetando ANSI,
 # asi que sin este filtro un nombre hostil podria colar sus propias secuencias.
-badge_sanitize() {
+badge_strip() {
   local text="$1"
-  text="${text//[[:cntrl:]]/}"
+  printf '%s' "${text//[[:cntrl:]]/}"
+}
+
+# badge_sanitize <texto> -> el texto filtrado y recortado a CAR_BADGE_MAX.
+# El recorte va por campo y no por linea: la linea del badge son tres campos
+# mas separadores, y recortarla entera a 60 la mutilaria.
+badge_sanitize() {
+  local text
+  text="$(badge_strip "$1")"
   printf '%s' "${text:0:$CAR_BADGE_MAX}"
 }
 

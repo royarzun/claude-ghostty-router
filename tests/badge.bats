@@ -55,3 +55,14 @@ setup() {
   run badge_color "$(printf 'ma\033[31mlo')" "#8fbc5a"
   [ "$output" = "$(printf '\033[1;38;2;143;188;90mma[31mlo\033[0m')" ]
 }
+
+@test "badge_strip filtra los bytes de control sin recortar" {
+  # badge_bar necesita el filtro sin el recorte: la linea entera son tres
+  # campos mas separadores, y recortarla a 60 la mutilaria.
+  local largo
+  largo="$(printf 'x%.0s' $(seq 1 200))"
+  run badge_strip "$(printf 'ma\033[31mlo')$largo"
+  [ "$status" -eq 0 ]
+  [ "$output" = "ma[31mlo$largo" ]
+  [ "${#output}" -eq 208 ]
+}
