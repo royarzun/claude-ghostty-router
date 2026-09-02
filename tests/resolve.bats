@@ -60,3 +60,27 @@ setup() {
   run resolve_route "$HOME/repos/sotos-chat"
   [[ "$output" == work$'\t'sotos-chat$'\t'* ]]
 }
+
+@test "una ruta con barra final casa igual: es lo que escribe el autocompletado" {
+  write_conf \
+    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile work ~/.claude-work *@empresa.com #171b12" \
+    "route ~/repos/conbarra/ work"
+  car_load_config "$CAR_CONF"
+  mkdir -p "$HOME/repos/conbarra/src"
+  run resolve_route "$HOME/repos/conbarra"
+  [[ "$output" == work$'\t'* ]]
+  run resolve_route "$HOME/repos/conbarra/src"
+  [[ "$output" == work$'\t'* ]]
+}
+
+@test "el config-dir de un perfil tolera la barra final" {
+  write_conf \
+    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile work ~/.claude-work/ *@empresa.com #171b12" \
+    "route ~/repos/miapp work"
+  car_load_config "$CAR_CONF"
+  mkdir -p "$HOME/repos/miapp"
+  run resolve_route "$HOME/repos/miapp"
+  [ "$(printf '%s' "$output" | cut -f3)" = "$HOME/.claude-work" ]
+}

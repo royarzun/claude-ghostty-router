@@ -34,6 +34,20 @@ car_expand_tilde() {
   esac
 }
 
+# car_strip_trailing_slash <ruta> -> la misma ruta sin la barra final, salvo
+# que la ruta sea exactamente "/" (esa barra no se puede quitar).
+# El autocompletado de directorios anade una barra final, y una ruta declarada
+# con ella no casaria nunca en car_match_dir: se caeria al perfil por defecto
+# en silencio, que es el peor fallo posible aqui. Se normaliza al declararla.
+car_strip_trailing_slash() {
+  local valor="$1"
+  case "$valor" in
+    /) ;;
+    */) valor="${valor%/}" ;;
+  esac
+  printf '%s' "$valor"
+}
+
 # config_parse <archivo>
 # Imprime, en orden de aparicion:
 #   profile<TAB><nombre><TAB><dir><TAB><email-glob><TAB><color>
@@ -86,7 +100,7 @@ config_parse() {
             return $CAR_ECONFIG
             ;;
         esac
-        printf 'profile\t%s\t%s\t%s\t%s\n' "$name" "$(car_expand_tilde "$dir")" "$glob" "$color"
+        printf 'profile\t%s\t%s\t%s\t%s\n' "$name" "$(car_strip_trailing_slash "$(car_expand_tilde "$dir")")" "$glob" "$color"
         ;;
       route)
         read -r rpath rprof extra <<< "$rest"
@@ -98,7 +112,7 @@ config_parse() {
           echo "claude-account: $file linea $lineno: campos de mas ('$extra')" >&2
           return $CAR_ECONFIG
         fi
-        printf 'route\t%s\t%s\n' "$(car_expand_tilde "$rpath")" "$rprof"
+        printf 'route\t%s\t%s\n' "$(car_strip_trailing_slash "$(car_expand_tilde "$rpath")")" "$rprof"
         ;;
       *)
         echo "claude-account: $file linea $lineno: directiva desconocida '$kind'" >&2

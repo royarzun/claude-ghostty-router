@@ -117,6 +117,10 @@ car_git_main() {
 # forma logica debe seguir casando por el camino literal.
 resolve_route() {
   local dir="$1" phys root main label cand profile
+  # Defensa en profundidad: un $PWD normal no trae barra final, pero
+  # `claude-account which ~/repos/miapp/` si puede traerla desde la linea de
+  # comandos (o el autocompletado de zsh), y sin normalizar no casaria nunca.
+  dir="$(car_strip_trailing_slash "$dir")"
   phys="$(cd -P "$dir" 2>/dev/null && pwd)" || phys=""
   root="$(car_git_root "$dir")"
   if [ -n "$root" ]; then
