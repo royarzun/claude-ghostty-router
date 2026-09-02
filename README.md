@@ -86,6 +86,8 @@ route ~/repos/cliente-*            work
   solo si sabes por qué.
 - `color` es el `#rrggbb` con el que se pinta el nombre del perfil en el badge. `-` lo deja
   sin color. Conviene un tono legible sobre el fondo de tu tema: es texto, no un tinte.
+  `claude-account check` lo imprime pintado con el suyo, así que un tono ilegible se ve ahí
+  en vez de descubrirse dentro de una sesión.
 
 **`route <ruta> <perfil>`**
 
@@ -228,7 +230,7 @@ pisa un `statusLine` que no haya puesto él.
 
 ```sh
 brew install bats-core shellcheck
-bats tests/                                          # 127 tests
+bats tests/                                          # 128 tests
 shellcheck -s bash bin/claude-account install.sh lib/*.sh
 ```
 
