@@ -1,4 +1,6 @@
-# Unico emisor de secuencias de escape del proyecto.
+# Emisor de las secuencias SGR del proyecto: el texto coloreado del badge, que
+# renderiza Claude Code dentro de la sesion. Su hermano lib/ghostty.sh emite
+# OSC, que le habla al emulador de terminal.
 # No sabe que es un perfil: recibe texto y color, y emite bytes.
 
 CAR_BADGE_MAX=60
