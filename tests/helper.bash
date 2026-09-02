@@ -39,3 +39,25 @@ make_repo() {
   git -C "$1" config user.name test
   git -C "$1" commit -q --allow-empty -m init
 }
+
+# install_badge <subdirectorio-de-HOME>
+# Deja el statusLine que instala ./install.sh en el settings.json de un perfil.
+install_badge() {
+  local dir="$HOME/$1"
+  mkdir -p "$dir"
+  printf '{"statusLine":{"type":"command","command":"/x/claude-account statusline"}}\n' \
+    > "$dir/settings.json"
+}
+
+# statusline_json <directorio-del-proyecto>
+# El JSON de estado que Claude Code entrega por stdin a un comando de statusLine.
+# Se arma con json.dumps y no con printf porque una ruta puede traer bytes que
+# hay que escapar: con printf saldria un JSON invalido y el test probaria otra
+# cosa distinta de la que dice probar.
+statusline_json() {
+  python3 -c 'import json, sys
+d = sys.argv[1]
+print(json.dumps({"session_id": "abc",
+                  "workspace": {"project_dir": d, "current_dir": d},
+                  "model": {"display_name": "Opus"}}))' "$1"
+}

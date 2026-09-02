@@ -1,5 +1,10 @@
 # El color solo mientras Claude corre — Plan de implementación
 
+> **Sin ejecutar.** Su spec quedó reemplazada por
+> [2026-09-02-badge-en-statusline-design.md](../specs/2026-09-02-badge-en-statusline-design.md):
+> el badge del `statusLine` dice la cuenta dentro de la sesión, y con eso el tinte deja de
+> hacer falta. Se conserva porque su análisis del pintado por `precmd` sigue siendo válido.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Que el fondo de la terminal se tiña con el color del perfil solo mientras corre una sesión de Claude, y vuelva al color del tema al salir.

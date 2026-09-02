@@ -2,22 +2,23 @@
 
 Enruta cada carpeta a la cuenta de Claude Code que le corresponde, dentro de [Ghostty](https://ghostty.org).
 
-- Cada tab muestra **en su título y en su color de fondo** a qué cuenta pertenece.
+- Dentro de cada sesión, un **badge** dice con qué cuenta está corriendo Claude.
 - Si la cuenta logueada no es la esperada para esa carpeta, **Claude no arranca**.
 - Fuera de Ghostty todo se comporta exactamente como antes.
 
 Inspirado en [kirlts/claude-account-router](https://github.com/kirlts/claude-account-router),
 que resuelve el mismo problema para VS Code enganchándose a `claudeCode.claudeProcessWrapper`.
-Ghostty no tiene API de plugins, así que aquí el mismo objetivo se construye con las piezas
-que sí ofrece una terminal: variables de sesión, integración de shell y secuencias OSC.
+Ghostty no tiene API de plugins, así que aquí el mismo objetivo se construye con dos piezas
+que sí existen: la integración de shell de zsh, y el `statusLine` que Claude Code deja
+configurar para pintar una línea propia dentro de su interfaz.
 
 ## El problema
 
 Claude Code toma la cuenta de un único directorio de configuración. Con dos cuentas hay que
 cerrar y abrir sesión a mano para cambiar, y nada indica con qué cuenta está corriendo una
-sesión. Si trabajas con varios proyectos en tabs distintos de la misma ventana, un tab en
-reposo no dice a qué cuenta pertenece, y lanzar Claude en el proyecto equivocado con la
-cuenta equivocada es silencioso.
+sesión. Si trabajas con varios proyectos en tabs distintos de la misma ventana, lanzar Claude
+en el proyecto equivocado con la cuenta equivocada es silencioso: nada en la pantalla lo
+desmiente.
 
 ## Requisitos
 
@@ -42,12 +43,18 @@ El instalador es idempotente y pregunta antes de cada cambio fuera del repo:
 1. Enlaza `bin/claude-account` en `~/.local/bin`.
 2. Crea `~/.config/claude-ghostty-router/routes.conf` desde el ejemplo. **Nunca lo sobrescribe.**
 3. Añade una línea a `~/.zshrc` que hace `source` de `shell/router.zsh`.
-4. Pone `no-title` en `shell-integration-features` de tu config de Ghostty, con backup previo.
+4. Añade el badge al `settings.json` de cada perfil, con backup previo.
 5. Ejecuta `claude-account check` y te muestra el resultado.
 
-Ese paso 4 hace falta porque Ghostty reescribe el título en cada prompt y pisaría el nuestro.
-Si usas **oh-my-zsh**, su módulo `termsupport` hace lo mismo: el router pone
-`DISABLE_AUTO_TITLE=true` en tiempo de ejecución, y solo dentro de Ghostty.
+El paso 4 escribe una sola clave, `statusLine`, y deja el resto del archivo intacto. Cada
+perfil tiene su propio `settings.json` porque `CLAUDE_CONFIG_DIR` es justamente lo que mueve
+la configuración de nivel usuario a la carpeta del perfil. Si ya tienes un `statusLine`
+propio, **no se toca**: el instalador avisa y sigue. Si añades un perfil más adelante, vuelve
+a correr `./install.sh` para darle su badge.
+
+Versiones anteriores ponían `no-title` en la config de Ghostty para sostener un título de tab
+que este proyecto ya no escribe. Si la encuentra, el instalador **ofrece quitarla**, con
+backup: sin ella Ghostty vuelve a mostrar el comando en curso en el título.
 
 Para revertirlo todo:
 
@@ -55,16 +62,17 @@ Para revertirlo todo:
 ./install.sh --uninstall
 ```
 
-`routes.conf` se conserva: es tuyo.
+`routes.conf` se conserva: es tuyo. El `statusLine` se quita de cada perfil, y el resto de
+cada `settings.json` queda como estaba.
 
 ## Configuración
 
 Un solo archivo, `~/.config/claude-ghostty-router/routes.conf`:
 
 ```conf
-#       <nombre>  <config-dir>    <email-glob>        <fondo>
+#       <nombre>  <config-dir>    <email-glob>        <color>
 profile personal  ~/.claude       yo@gmail.com        -
-profile work      ~/.claude-work  *@empresa.com       #171b12
+profile work      ~/.claude-work  *@empresa.com       #e0a458
 
 route ~/repos/proyecto-de-trabajo  work
 route ~/repos/cliente-*            work
@@ -76,8 +84,8 @@ route ~/repos/cliente-*            work
 - `email-glob` es el patrón que **debe** cumplir la cuenta logueada ahí. `-` desactiva la
   verificación de ese perfil, lo que anula la única garantía que da esta herramienta: úsalo
   solo si sabes por qué.
-- `color` es el fondo `#rrggbb` de la superficie. `-` respeta el tema. Conviene un tinte
-  apenas perceptible sobre tu fondo habitual: reconocible de reojo, sin arruinar el tema.
+- `color` es el `#rrggbb` con el que se pinta el nombre del perfil en el badge. `-` lo deja
+  sin color. Conviene un tono legible sobre el fondo de tu tema: es texto, no un tinte.
 
 **`route <ruta> <perfil>`**
 
@@ -111,7 +119,7 @@ claude-account routes         # mapa carpeta -> perfil
 claude-account which [dir]    # el perfil de un directorio, en una línea
 claude-account check          # diagnóstico completo
 claude-account login <perfil> # abre sesión en un perfil
-claude-account mark           # repinta la superficie actual
+claude-account statusline     # la línea del badge (la invoca Claude Code)
 ```
 
 ### Añadir la segunda cuenta
@@ -137,8 +145,8 @@ El principio es uno solo: **si no se puede verificar, no arranca**. También blo
 perfil no tiene sesión, si su directorio no existe, si `routes.conf` tiene un error de
 sintaxis, o si falta `python3`. La ambigüedad se resuelve bloqueando, nunca adivinando.
 
-Un `routes.conf` roto además se *ve*: el título del tab pasa a `⚠ routes.conf invalido`.
-Pero quien detiene el arranque es siempre el shim, nunca el pintado.
+Un `routes.conf` roto además se *ve*: el badge pasa a `⚠ routes.conf invalido`.
+Pero quien detiene el arranque es siempre el shim, nunca el badge.
 
 ## Arquitectura
 
@@ -147,29 +155,55 @@ Pero quien detiene el arranque es siempre el shim, nunca el pintado.
 | `lib/config.sh` | Parsea `routes.conf` a registros. Nada más. |
 | `lib/resolve.sh` | `directorio → perfil`. |
 | `lib/identity.{sh,py}` | `perfil → email logueado`. **Nunca lee tokens.** |
-| `lib/ghostty.sh` | Único emisor de secuencias OSC del proyecto. |
+| `lib/statusline.py` | Carpeta del JSON de stdin + email del perfil, en un solo fork. |
+| `lib/badge.sh` | Único emisor de secuencias de escape del proyecto. |
+| `lib/settings.py` | Mete y saca la clave `statusLine` de un `settings.json` ajeno. |
 | `bin/claude-account` | El CLI, y la verificación *fail-closed*. |
-| `shell/router.zsh` | Hooks de sesión y la función `claude()`. |
+| `shell/router.zsh` | La función `claude()`. |
 
-El núcleo es puro: entran datos, salen datos, sin efectos secundarios. Solo la capa Ghostty
+El núcleo es puro: entran datos, salen datos, sin efectos secundarios. Solo `lib/badge.sh`
 emite escapes, y solo el shim decide bloquear.
 
 `shell/router.zsh` se auto-desactiva si `TERM != xterm-ghostty`, así que no afecta a scripts,
-cron ni a la terminal integrada de un editor. Pinta en cada `precmd` con una caché por
-directorio invalidada por el `mtime` de `routes.conf`: con la caché caliente son unos 40 bytes
-escritos y ningún proceso nuevo.
+cron ni a la terminal integrada de un editor. No pinta nada ni engancha ningún hook de prompt:
+sustituye a `claude` y nada más.
 
-**El hook nunca exporta `CLAUDE_CONFIG_DIR`.** Solo pinta. La variable se define únicamente en
-el proceso de Claude ya verificado, para que ningún script que esquive la función acabe
+**El shell nunca exporta `CLAUDE_CONFIG_DIR` por su cuenta.** La variable se define únicamente
+en el proceso de Claude ya verificado, para que ningún script que esquive la función acabe
 corriendo con un perfil que nadie comprobó.
+
+### El badge
+
+`statusLine` es una clave del `settings.json` de Claude Code que apunta a un comando propio:
+su stdout se renderiza en una fila fija de la interfaz, visible durante toda la sesión, y se
+refresca con cada mensaje. Aquí ese comando es `claude-account statusline`.
+
+```
+work · tu-cuenta@empresa.com · traza-backend
+```
+
+El perfil y el email **no se deducen de la carpeta**: salen del `CLAUDE_CONFIG_DIR` con el que
+la sesión está corriendo de verdad, que el comando hereda por ser hijo del proceso `claude`.
+Por eso el badge dice lo que *es* y no lo que debería ser: si esquivas la función con
+`command claude`, lo verás decir `personal` en una carpeta de trabajo. Cuesta un solo proceso
+de `python3` por refresco, y no llama a `git` ni resuelve rutas.
 
 ### Seguridad
 
-El título se construye con un nombre de carpeta, y una carpeta puede tener bytes de control en
-su nombre. `ghostty.sh` los filtra y recorta el título antes de emitirlo:
-un título sin sanear es una vía de inyección de secuencias de escape, y
-[ya hubo CVEs de esto en Ghostty](https://dgl.cx/2024/12/ghostty-terminal-title).
-El color se valida contra `#rrggbb` antes de entrar en una secuencia OSC.
+El badge se arma con un nombre de carpeta y con un email leído de un archivo, y ninguno de los
+dos es texto de confianza: una carpeta puede llamarse con bytes de control adentro. Claude Code
+renderiza el badge respetando ANSI, así que un nombre hostil podría colar sus propias
+secuencias. `lib/badge.sh` los filtra y recorta el texto antes de emitirlo, y `lib/statusline.py`
+los filtra otra vez en el punto por el que entran. El color se valida contra `#rrggbb` antes de
+entrar en una secuencia.
+
+Al no escribir nunca el título del tab, la vía de inyección que
+[ya dio CVEs en Ghostty](https://dgl.cx/2024/12/ghostty-terminal-title) deja de existir en vez
+de quedar mitigada.
+
+El `settings.json` de cada perfil es un archivo tuyo: el instalador lo respalda antes de
+tocarlo, cambia una sola clave, conserva el modo del archivo (`600` en `~/.claude`) y nunca
+pisa un `statusLine` que no haya puesto él.
 
 ## Limitaciones conocidas
 
@@ -184,14 +218,17 @@ El color se valida contra `#rrggbb` antes de entrar en una secuencia OSC.
 - **La verificación depende del formato de `.claude.json`.** Si Claude Code cambia dónde guarda
   `oauthAccount`, la verificación falla cerrada hasta actualizar `identity.sh`.
   `claude-account check` es la forma de detectarlo temprano.
-- **El título deja de mostrar el comando en curso.** Es el precio de que diga de qué cuenta es
-  el tab.
+- **El badge depende de `statusLine`.** Si Claude Code cambia esa clave o el JSON que entrega
+  por stdin, el badge se degrada o desaparece; el bloqueo por cuenta equivocada no se entera y
+  sigue funcionando.
+- **El badge solo se ve en el split enfocado.** Un tab en reposo no dice a qué cuenta
+  pertenece: para eso haría falta el título, y sostenerlo cuesta el título de Ghostty.
 
 ## Desarrollo
 
 ```sh
 brew install bats-core shellcheck
-bats tests/                                          # 106 tests
+bats tests/                                          # 127 tests
 shellcheck -s bash bin/claude-account install.sh lib/*.sh
 ```
 

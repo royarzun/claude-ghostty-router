@@ -1,8 +1,13 @@
 # El color solo mientras Claude corre — Diseño
 
 **Fecha:** 2026-09-02
-**Estado:** aprobado, pendiente de plan de implementación
+**Estado:** reemplazada por [2026-09-02-badge-en-statusline-design.md](2026-09-02-badge-en-statusline-design.md), sin implementar
+
 **Modifica:** [2026-09-01-claude-ghostty-router-design.md](2026-09-01-claude-ghostty-router-design.md)
+
+> Se conserva porque explica por qué se descartó el marcado permanente del tab. Lo que no
+> vio es que Claude Code ofrece una superficie propia —`statusLine`— dentro de la sesión:
+> con ella el color deja de hacer falta, y el título vuelve a ser de Ghostty sin negociar.
 
 ## Problema
 

@@ -2,28 +2,31 @@ setup() {
   load helper
   setup_fixture
   CA="$CAR_ROOT/bin/claude-account"
-  export CAR_GHOSTTY_CONF="$BATS_TEST_TMPDIR/config.ghostty"
   write_conf \
     "profile personal ~/.claude tu-email@ejemplo.com -" \
-    "profile work ~/.claude-work *@empresa.com #171b12" \
+    "profile work ~/.claude-work *@empresa.com #8fbc5a" \
     "route ~/repos/miapp work"
 }
 
-@test "todo en orden sale con 0" {
+# Los dos perfiles en orden: con sesion, con el email que toca y con badge.
+perfiles_ok() {
   make_profile ".claude" "tu-email@ejemplo.com"
   make_profile ".claude-work" "ricardo@empresa.com"
-  printf 'shell-integration-features = cursor,no-sudo,no-title,path\n' > "$CAR_GHOSTTY_CONF"
+  install_badge ".claude"
+  install_badge ".claude-work"
   export CAR_ROUTER_LOADED=1
+}
+
+@test "todo en orden sale con 0" {
+  perfiles_ok
   run "$CA" check
   [ "$status" -eq 0 ]
   [[ "$output" == *"routes.conf valido"* ]]
 }
 
 @test "un perfil sin sesion hace fallar el check" {
-  make_profile ".claude" "tu-email@ejemplo.com"
-  make_profile ".claude-work"
-  printf 'shell-integration-features = no-title\n' > "$CAR_GHOSTTY_CONF"
-  export CAR_ROUTER_LOADED=1
+  perfiles_ok
+  rm -f "$HOME/.claude-work/.claude.json"
   run "$CA" check
   [ "$status" -eq 1 ]
   [[ "$output" == *"work"* ]]
@@ -31,10 +34,8 @@ setup() {
 }
 
 @test "un email que no cumple su glob hace fallar el check" {
-  make_profile ".claude" "tu-email@ejemplo.com"
+  perfiles_ok
   make_profile ".claude-work" "tu-email@ejemplo.com"
-  printf 'shell-integration-features = no-title\n' > "$CAR_GHOSTTY_CONF"
-  export CAR_ROUTER_LOADED=1
   run "$CA" check
   [ "$status" -eq 1 ]
   [[ "$output" == *"no coincide"* ]]
@@ -44,29 +45,40 @@ setup() {
   write_conf \
     "profile personal ~/.claude - -" \
     "profile work ~/.claude-work - -"
-  make_profile ".claude" "tu-email@ejemplo.com"
+  perfiles_ok
   make_profile ".claude-work" "tu-email@ejemplo.com"
-  printf 'shell-integration-features = no-title\n' > "$CAR_GHOSTTY_CONF"
-  export CAR_ROUTER_LOADED=1
   run "$CA" check
   [ "$status" -eq 1 ]
   [[ "$output" == *"misma cuenta"* ]]
 }
 
-@test "sin no-title en la config de Ghostty avisa" {
-  make_profile ".claude" "tu-email@ejemplo.com"
-  make_profile ".claude-work" "ricardo@empresa.com"
-  printf 'theme = Github Dark Default\n' > "$CAR_GHOSTTY_CONF"
-  export CAR_ROUTER_LOADED=1
+@test "un perfil sin badge hace fallar el check" {
+  perfiles_ok
+  rm -f "$HOME/.claude-work/settings.json"
   run "$CA" check
   [ "$status" -eq 1 ]
-  [[ "$output" == *"no-title"* ]]
+  [[ "$output" == *"sin statusLine"* ]]
+}
+
+@test "un statusLine ajeno se avisa sin proponerse pisarlo" {
+  perfiles_ok
+  printf '{"statusLine":{"type":"command","command":"mi-script"}}\n' \
+    > "$HOME/.claude-work/settings.json"
+  run "$CA" check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"otro statusLine"* ]]
+}
+
+@test "un settings.json corrupto se avisa" {
+  perfiles_ok
+  printf 'no soy json\n' > "$HOME/.claude-work/settings.json"
+  run "$CA" check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no puedo leer"* ]]
 }
 
 @test "sin el router cargado en la sesion avisa" {
-  make_profile ".claude" "tu-email@ejemplo.com"
-  make_profile ".claude-work" "ricardo@empresa.com"
-  printf 'shell-integration-features = no-title\n' > "$CAR_GHOSTTY_CONF"
+  perfiles_ok
   run env -u CAR_ROUTER_LOADED "$CA" check
   [ "$status" -eq 1 ]
   [[ "$output" == *"router no esta cargado"* ]]

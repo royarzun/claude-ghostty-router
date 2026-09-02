@@ -2,3 +2,4 @@
 *.bak
 tests/tmp/
 .claude/worktrees/
+__pycache__/

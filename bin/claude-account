@@ -18,36 +18,80 @@ CAR_ROOT_DIR="$(cd "$(dirname "$car_self")/.." && pwd)"
 . "$CAR_ROOT_DIR/lib/config.sh"
 . "$CAR_ROOT_DIR/lib/resolve.sh"
 . "$CAR_ROOT_DIR/lib/identity.sh"
-. "$CAR_ROOT_DIR/lib/ghostty.sh"
+. "$CAR_ROOT_DIR/lib/badge.sh"
 
 CAR_CONF="${CAR_CONF:-$HOME/.config/claude-ghostty-router/routes.conf}"
 
-# _surface <directorio>
-# Emite los escapes que marcan esta superficie. Nunca falla: el pintado informa,
-# no decide. Un routes.conf roto se ve en el titulo; quien bloquea es el shim.
-cmd_surface() {
-  local dir="${1:-$PWD}" record profile label pdir pglob color
+# statusline
+# Lee por stdin el JSON de estado que entrega Claude Code y escribe la linea
+# del badge. Nunca falla ni bloquea: informa de la cuenta con la que la sesion
+# ESTA corriendo, no de la que le tocaria. Por eso el perfil sale del
+# CLAUDE_CONFIG_DIR heredado del proceso claude y no de resolver la carpeta:
+# si alguien esquiva la funcion del shell con `command claude`, el badge lo
+# delata en vez de repetir la version oficial de los hechos.
+cmd_statusline() {
+  local config_dir default_dir i profile color identity datos project label email
+  local payload=""
 
-  [ -f "$CAR_CONF" ] || return 0
+  # Claude Code escribe el JSON en nuestro stdin. Se lee entero y de una vez,
+  # antes de decidir nada: un camino que salga sin leerlo le devuelve un EPIPE
+  # a quien lo esta escribiendo. `read -d ""` lee hasta EOF sin forkar.
+  IFS= read -r -d "" payload || true
+
+  default_dir="$CAR_HOME/.claude"
+  config_dir="$(car_strip_trailing_slash "${CLAUDE_CONFIG_DIR:-$default_dir}")"
+  # routes.conf guarda las rutas ya resueltas (cd -P), asi que el config-dir
+  # heredado tiene que llegar a esa misma forma o no casaria ningun perfil.
+  config_dir="$(cd -P "$config_dir" 2>/dev/null && pwd || printf '%s' "$config_dir")"
 
   if ! car_load_config "$CAR_CONF" 2>/dev/null; then
-    ghostty_title "⚠ routes.conf invalido"
-    ghostty_bg "-"
+    # Aqui reaparece el aviso de config rota: es la unica superficie que le
+    # queda al proyecto, y `_launch-check` ya explica el error por stderr.
+    printf '%s\n' "⚠ routes.conf invalido"
     return 0
   fi
 
-  if ! record="$(resolve_route "$dir" 2>/dev/null)"; then
-    ghostty_title "⚠ routes.conf invalido"
-    ghostty_bg "-"
+  profile="?"
+  color="-"
+  for ((i = 0; i < ${#CAR_P_DIR[@]}; i++)); do
+    if [ "${CAR_P_DIR[$i]}" = "$config_dir" ]; then
+      profile="${CAR_P_NAME[$i]}"
+      color="${CAR_P_COLOR[$i]}"
+      break
+    fi
+  done
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    printf '%s\n' "$(badge_color "$profile" "$color") · (sin python3)"
     return 0
   fi
 
-  # pdir/pglob son campos del registro que este comando no necesita.
-  # shellcheck disable=SC2034
-  IFS=$'\t' read -r profile label pdir pglob color <<< "$record"
-  ghostty_title "$profile · $label"
-  ghostty_bg "$color" || ghostty_bg "-"
+  identity="$(identity_file "$config_dir")" || identity=""
+  # Un solo fork: statusline.py saca la carpeta del JSON de stdin y el email
+  # del perfil de una sola vez. Claude Code reejecuta esto con cada mensaje.
+  datos="$(python3 "$CAR_ROOT_DIR/lib/statusline.py" "$identity" <<< "$payload")"
+  # Separador US y no tabulador: el tabulador es espacio en blanco para el IFS,
+  # y una carpeta vacia (stdin sin JSON valido) desplazaria el email a su sitio.
+  IFS=$'\037' read -r project email <<< "$datos"
+
+  label="${project##*/}"
+  [ -n "$email" ] || email="(sin sesion)"
+
+  printf '%s · %s' "$(badge_color "$profile" "$color")" "$(badge_sanitize "$email")"
+  [ -n "$label" ] && printf ' · %s' "$(badge_sanitize "$label")"
+  printf '\n'
   return 0
+}
+
+# _config-dirs
+# Un config-dir por linea, en orden de declaracion. Existe para que install.sh
+# sepa en que settings.json escribir sin reimplementar el parseo de routes.conf.
+cmd_config_dirs() {
+  car_load_config "$CAR_CONF" || return $CAR_ECONFIG
+  local i
+  for ((i = 0; i < ${#CAR_P_DIR[@]}; i++)); do
+    printf '%s\n' "${CAR_P_DIR[$i]}"
+  done
 }
 
 # _launch-check <directorio>
@@ -179,11 +223,9 @@ claude-account — enrutado de cuentas Claude por carpeta, dentro de Ghostty
   claude-account which [dir]    perfil de un directorio
   claude-account check          diagnostico completo
   claude-account login <perfil> inicia sesion en un perfil
-  claude-account mark           repinta la superficie actual
+  claude-account statusline     linea del badge (la invoca Claude Code)
 AYUDA
 }
-
-CAR_GHOSTTY_CONF="${CAR_GHOSTTY_CONF:-$HOME/Library/Application Support/com.mitchellh.ghostty/config.ghostty}"
 
 car_check_ok=0
 car_check_bad=0
@@ -192,7 +234,7 @@ car_ok()   { printf '  ok   %s\n' "$1"; car_check_ok=$((car_check_ok + 1)); }
 car_fail() { printf '  FALLA %s\n' "$1"; car_check_bad=$((car_check_bad + 1)); }
 
 cmd_check() {
-  local i j email status expires now dias creds
+  local i j email status expires now dias creds settings
 
   car_check_ok=0
   car_check_bad=0
@@ -211,16 +253,6 @@ cmd_check() {
     car_ok "el router esta cargado en esta shell"
   else
     car_fail "el router no esta cargado en esta shell (abre un tab nuevo, o revisa ~/.zshrc)"
-  fi
-
-  if [ -f "$CAR_GHOSTTY_CONF" ]; then
-    if grep -q 'no-title' "$CAR_GHOSTTY_CONF"; then
-      car_ok "Ghostty tiene no-title en shell-integration-features"
-    else
-      car_fail "Ghostty reescribira el titulo: falta no-title en shell-integration-features"
-    fi
-  else
-    car_fail "no encuentro la config de Ghostty en $CAR_GHOSTTY_CONF"
   fi
 
   echo "Perfiles"
@@ -249,6 +281,18 @@ cmd_check() {
     fi
   done
 
+  echo "Badge"
+  for ((i = 0; i < ${#CAR_P_NAME[@]}; i++)); do
+    settings="${CAR_P_DIR[$i]}/settings.json"
+    python3 "$CAR_ROOT_DIR/lib/settings.py" "$settings" --check
+    case $? in
+      0) car_ok "${CAR_P_NAME[$i]}: statusLine instalado" ;;
+      2) car_fail "${CAR_P_NAME[$i]}: sin statusLine en $settings -> ./install.sh" ;;
+      3) car_fail "${CAR_P_NAME[$i]}: hay otro statusLine en $settings; no lo toco" ;;
+      *) car_fail "${CAR_P_NAME[$i]}: no puedo leer $settings" ;;
+    esac
+  done
+
   for ((i = 0; i < ${#CAR_P_NAME[@]}; i++)); do
     for ((j = i + 1; j < ${#CAR_P_NAME[@]}; j++)); do
       local a b
@@ -269,14 +313,14 @@ main() {
   local command="${1:-status}"
   shift || true
   case "$command" in
-    _surface)      cmd_surface "$@" ;;
+    statusline)    cmd_statusline "$@" ;;
+    _config-dirs)  cmd_config_dirs "$@" ;;
     _launch-check) cmd_launch_check "$@" ;;
     which)         cmd_which "$@" ;;
     routes)        cmd_routes "$@" ;;
     status)        cmd_status "$@" ;;
     login)         cmd_login "$@" ;;
     check)         cmd_check "$@" ;;
-    mark)          cmd_surface "$PWD" ;;
     help|-h|--help) cmd_help ;;
     *)
       echo "claude-account: comando desconocido '$command'" >&2

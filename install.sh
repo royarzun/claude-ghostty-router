@@ -9,7 +9,9 @@ ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
 GHOSTTY_CONF="${CAR_GHOSTTY_CONF:-$HOME/Library/Application Support/com.mitchellh.ghostty/config.ghostty}"
 MARCA="# claude-ghostty-router"
 LINEA_ZSHRC="[ -f \"$CAR_SRC/shell/router.zsh\" ] && source \"$CAR_SRC/shell/router.zsh\"  $MARCA"
-FEATURES="shell-integration-features = cursor,no-sudo,no-title,no-ssh-env,no-ssh-terminfo,path"
+# Ruta absoluta a proposito: Claude Code puede arrancar con un PATH que no
+# incluya ~/.local/bin, y un statusLine que no se puede ejecutar no se ve.
+STATUSLINE_CMD="$BIN_DIR/claude-account statusline"
 
 ASUMIR_SI=0
 MODO=install
@@ -26,6 +28,45 @@ confirmar() {
   printf '%s [s/N] ' "$1"
   read -r respuesta
   case "$respuesta" in s|S|si|SI) return 0 ;; *) return 1 ;; esac
+}
+
+# badge_por_perfil --install | --uninstall
+# El badge vive en el settings.json de cada perfil, porque CLAUDE_CONFIG_DIR es
+# justo lo que mueve el settings.json de nivel usuario a la carpeta del perfil.
+# Se usa el CLI del repo y no el enlace: al desinstalar, el enlace ya no esta.
+badge_por_perfil() {
+  local accion="$1" dir settings rc
+  local cli="$CAR_SRC/bin/claude-account"
+
+  if ! "$cli" _config-dirs >/dev/null 2>&1; then
+    echo "!!  no puedo leer los perfiles de $CONF_DIR/routes.conf: me salto el badge"
+    return 0
+  fi
+
+  if [ "$accion" = "--install" ] && ! confirmar "Instalar el badge de cuenta en el settings.json de cada perfil?"; then
+    return 0
+  fi
+
+  "$cli" _config-dirs | while IFS= read -r dir; do
+    [ -n "$dir" ] || continue
+    settings="$dir/settings.json"
+    [ "$accion" = "--install" ] && mkdir -p "$dir"
+    [ -d "$dir" ] || continue
+
+    rc=0
+    if [ "$accion" = "--install" ]; then
+      python3 "$CAR_SRC/lib/settings.py" "$settings" --install "$STATUSLINE_CMD" || rc=$?
+    else
+      python3 "$CAR_SRC/lib/settings.py" "$settings" --uninstall || rc=$?
+    fi
+
+    case "$rc" in
+      0) echo "ok  statusLine $([ "$accion" = "--install" ] && echo agregado a || echo quitado de) $settings" ;;
+      2) echo "ok  $settings ya estaba como toca" ;;
+      3) echo "!!  $settings tiene otro statusLine: no lo toco" ;;
+      *) echo "!!  no pude tocar $settings (JSON invalido o sin permisos)" ;;
+    esac
+  done
 }
 
 instalar() {
@@ -57,17 +98,25 @@ instalar() {
     echo "ok  linea agregada a $ZSHRC"
   fi
 
-  if [ -f "$GHOSTTY_CONF" ] && grep -q 'no-title' "$GHOSTTY_CONF"; then
-    echo "ok  Ghostty ya tiene no-title"
-  elif confirmar "Poner no-title en la config de Ghostty (con backup)?"; then
-    [ -f "$GHOSTTY_CONF" ] && cp "$GHOSTTY_CONF" "$GHOSTTY_CONF.bak"
-    printf '\n%s  %s\n' "$FEATURES" "$MARCA" >> "$GHOSTTY_CONF"
-    echo "ok  no-title agregado (backup en $GHOSTTY_CONF.bak)"
+  badge_por_perfil --install
+
+  # Versiones anteriores ponian no-title aqui, para sostener un titulo de tab
+  # que el router ya no escribe. Mientras esa linea siga puesta, Ghostty no
+  # muestra el comando en curso: se ofrece revertirla, igual que se ofrecio
+  # ponerla.
+  if [ -f "$GHOSTTY_CONF" ] && grep -qF "$MARCA" "$GHOSTTY_CONF"; then
+    if confirmar "Quitar el no-title que dejo una version anterior en la config de Ghostty?"; then
+      cp "$GHOSTTY_CONF" "$GHOSTTY_CONF.bak"
+      grep -vF "$MARCA" "$GHOSTTY_CONF" > "$GHOSTTY_CONF.tmp" || true
+      mv "$GHOSTTY_CONF.tmp" "$GHOSTTY_CONF"
+      echo "ok  no-title revertido (backup en $GHOSTTY_CONF.bak); recarga Ghostty para verlo"
+    fi
   fi
 
   echo
   echo "Falta un paso manual: edita $CONF_DIR/routes.conf y corre"
-  echo "'claude-account login <perfil>' para cada cuenta."
+  echo "'claude-account login <perfil>' para cada cuenta. Si anades un perfil"
+  echo "despues, vuelve a correr ./install.sh para darle su badge."
   echo
   # El diagnostico se ejecuta siempre: recien instalado va a fallar (todavia no
   # hay sesiones), y eso es exactamente lo que hay que ver.
@@ -75,6 +124,8 @@ instalar() {
 }
 
 desinstalar() {
+  badge_por_perfil --uninstall
+
   rm -f "$BIN_DIR/claude-account"
   echo "ok  enlace eliminado"
 
