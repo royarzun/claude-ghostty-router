@@ -16,10 +16,12 @@ export CAR_ROUTER_LOADED
 # llego a correr.
 typeset -g _car_tinted=
 
-# Red de seguridad para el unico camino que el bloque `always` no cubre:
-# suspender la sesion con Ctrl-Z y cerrar el tab sin volver a ella. El guardia
-# no es un detalle de eficiencia: sin el, cada shell de Ghostty escupiria un
-# reset al salir aunque nunca hubiera corrido Claude.
+# Red de seguridad para el camino que el bloque `always` no cubre en esta
+# shell: suspender la sesion con Ctrl-Z y cerrar el tab sin volver a ella. No
+# alcanza a una subshell —`(claude)` o `claude &`— porque ahi el tenido toca
+# una copia privada de esta variable y nunca vuelve; eso queda sin red.
+# El guardia no es un detalle de eficiencia: sin el, cada shell de Ghostty
+# escupiria un reset al salir aunque nunca hubiera corrido Claude.
 _car_cleanup() {
   [[ -n $_car_tinted ]] || return 0
   claude-account _untint 2>/dev/null
@@ -42,7 +44,7 @@ claude() {
 
   {
     if [[ -n $tint ]]; then
-      print -rn -- $tint
+      print -rn -- "$tint"
       _car_tinted=1
     fi
 
