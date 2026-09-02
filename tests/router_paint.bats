@@ -68,7 +68,8 @@ run_zsh() {
 }
 
 @test "el hook de salida resetea el fondo" {
-  # Se pinta un directorio teñido y se comprueba que el reset va justo despues.
-  run_zsh "cd '$HOME/repos/miapp'; _car_paint; _car_cleanup"
+  # No se llama a _car_cleanup a mano: se comprueba que el hook zshexit lo
+  # dispara solo al terminar la shell, que es lo que de verdad importa.
+  run_zsh "cd '$HOME/repos/miapp'; _car_paint"
   [[ "$output" == *"$(printf '\033]11;#171b12\007\033]111\007')" ]]
 }
