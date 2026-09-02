@@ -42,6 +42,9 @@ config_parse() {
 
   while IFS= read -r raw || [ -n "$raw" ]; do
     lineno=$((lineno + 1))
+    # Recorta el retorno de carro de finales de linea CRLF: sin esto, "dir" o
+    # "rprof" terminan con un \r invisible que nunca casa con nada.
+    raw="${raw%$'\r'}"
     # `read` divide por espacios y descarta los sobrantes, sin expandir globs.
     read -r kind rest <<< "$raw"
     [ -n "$kind" ] || continue
@@ -51,6 +54,11 @@ config_parse() {
 
     case "$kind" in
       profile)
+        # Los campos se separan por espacios, asi que una ruta con espacios en
+        # el nombre no es representable: se partiria en dos campos. No se puede
+        # detectar aqui (el separador ya se consumio) y se acepta como
+        # limitacion; el sintoma aguas abajo es un config-dir inexistente, que
+        # bloquea el arranque mostrando la ruta truncada.
         read -r name dir glob color extra <<< "$rest"
         if [ -z "$name" ] || [ -z "$dir" ]; then
           echo "claude-account: $file linea $lineno: profile necesita <nombre> <dir>" >&2

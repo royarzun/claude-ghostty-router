@@ -1,3 +1,5 @@
+bats_require_minimum_version 1.5.0
+
 setup() {
   load helper
   setup_fixture
@@ -77,4 +79,20 @@ setup() {
 @test "un archivo ilegible es un error de config" {
   run config_parse "$BATS_TEST_TMPDIR/no-existe.conf"
   [ "$status" -eq 2 ]
+}
+
+@test "tolera finales de linea CRLF" {
+  printf 'profile personal ~/.claude\r\nroute ~/repos/uno personal\r\n' > "$CAR_CONF"
+  run config_parse "$CAR_CONF"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(printf 'profile\tpersonal\t%s/.claude\t-\t-\nroute\t%s/repos/uno\tpersonal' "$HOME" "$HOME")" ]
+}
+
+@test "los errores van a stderr, no al flujo de registros" {
+  write_conf "profile personal ~/.claude" "basura aqui"
+  run --separate-stderr config_parse "$CAR_CONF"
+  [ "$status" -eq 2 ]
+  [[ "$stderr" == *"linea 2"* ]]
+  # stdout solo lleva el registro valido ya emitido, nunca el mensaje de error
+  [[ "$output" != *"linea 2"* ]]
 }
