@@ -28,3 +28,17 @@ setup() {
   run ghostty_bg "#abc"
   [ "$status" -eq 1 ]
 }
+
+@test "sin argumento resetea en vez de reventar" {
+  # ghostty.sh se carga en un script con `set -u`, donde un "$1" ausente
+  # mataria el proceso entero y no solo esta funcion.
+  run ghostty_bg
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(printf '\033]111\007')" ]
+}
+
+@test "una cadena vacia resetea igual que el guion" {
+  run ghostty_bg ""
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(printf '\033]111\007')" ]
+}
