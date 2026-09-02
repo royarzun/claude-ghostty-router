@@ -5,10 +5,19 @@ CAR_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 export CAR_ROOT
 
 # Prepara un HOME falso y la ruta de una routes.conf de prueba.
+# HOME se canonicaliza (cd -P) para que el symlink /var->/private/var de
+# macOS no contamine los tests con una discrepancia ajena a lo que cada
+# test quiere probar: git siempre emite rutas fisicas.
 setup_fixture() {
-  export HOME="$BATS_TEST_TMPDIR/home"
-  export CAR_CONF="$BATS_TEST_TMPDIR/routes.conf"
+  local base
+  base="$(cd -P "$BATS_TEST_TMPDIR" && pwd)"
+  export HOME="$base/home"
+  export CAR_CONF="$base/routes.conf"
   mkdir -p "$HOME"
+  # CAR_HOME se cachea entre invocaciones dentro del mismo proceso; sin este
+  # unset, un test que reutilice el proceso arrastraria el HOME de un test
+  # anterior.
+  unset CAR_HOME
 }
 
 # write_conf "linea 1" "linea 2" ...

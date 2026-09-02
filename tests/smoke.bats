@@ -4,8 +4,12 @@ setup() {
 }
 
 @test "el helper crea un HOME desechable" {
+  local base
+  # setup_fixture canonicaliza HOME (cd -P); comparamos contra la misma forma
+  # fisica de BATS_TEST_TMPDIR, no contra el string logico.
+  base="$(cd -P "$BATS_TEST_TMPDIR" && pwd)"
   [ -d "$HOME" ]
-  [[ "$HOME" == "$BATS_TEST_TMPDIR"* ]]
+  [[ "$HOME" == "$base"* ]]
 }
 
 @test "make_profile escribe un archivo de identidad legible" {

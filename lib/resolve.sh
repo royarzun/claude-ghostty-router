@@ -91,14 +91,45 @@ car_match_dir() {
   return 1
 }
 
+# car_git_root <directorio> -> raiz del arbol de trabajo, o cadena vacia
+car_git_root() {
+  git -C "$1" rev-parse --show-toplevel 2>/dev/null || printf ''
+}
+
+# car_git_main <directorio> -> raiz del repositorio principal.
+# En un worktree, --git-common-dir es absoluto y apunta al .git del repo original.
+car_git_main() {
+  local common
+  common="$(git -C "$1" rev-parse --git-common-dir 2>/dev/null)" || return 1
+  case "$common" in
+    /*) dirname "$common" ;;
+    *)  return 1 ;;
+  esac
+}
+
 # resolve_route <directorio>
 # -> perfil<TAB>proyecto<TAB>config-dir<TAB>email-glob<TAB>color
+#
+# Candidatos, en orden: el directorio, la raiz de su repo, el repo principal
+# (que difiere solo en worktrees). El primero que case una ruta gana.
 resolve_route() {
-  local dir="$1" label profile
-  label="$(basename "$dir")"
-  if profile="$(car_match_dir "$dir")"; then
-    car_emit_profile "$profile" "$label"
-    return $?
+  local dir="$1" root main label cand profile
+  root="$(car_git_root "$dir")"
+  if [ -n "$root" ]; then
+    label="$(basename "$root")"
+    main="$(car_git_main "$dir")" || main=""
+  else
+    label="$(basename "$dir")"
+    main=""
   fi
+
+  for cand in "$dir" "$root" "$main"; do
+    [ -n "$cand" ] || continue
+    if profile="$(car_match_dir "$cand")"; then
+      car_emit_profile "$profile" "$label"
+      return $?
+    fi
+  done
+
   car_emit_profile "${CAR_P_NAME[0]}" "$label"
 }
