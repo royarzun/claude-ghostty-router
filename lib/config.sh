@@ -13,6 +13,17 @@ CAR_EMISMATCH=5    # email logueado != glob esperado
 CAR_ENODIR=6       # config-dir del perfil no existe
 CAR_ENOPYTHON=7    # python3 ausente
 
+# git rev-parse emite rutas fisicas (con los symlinks resueltos), asi que las
+# rutas de routes.conf tienen que quedar en esa misma forma o no podran casar
+# nunca. Se calcula una vez: `cd -P` en cada linea seria un fork por linea.
+car_canonical_home() {
+  if [ -z "${CAR_HOME:-}" ]; then
+    CAR_HOME="$(cd -P "$HOME" 2>/dev/null && pwd)" || CAR_HOME="$HOME"
+    [ -n "$CAR_HOME" ] || CAR_HOME="$HOME"
+  fi
+  printf '%s' "$CAR_HOME"
+}
+
 # Expande un ~ inicial. No toca nada mas: los globs se conservan sin expandir,
 # porque el matching de rutas se hace despues con `case`.
 # Es un patron de `case` que casa el literal "~/", no una expansion: por eso
@@ -20,8 +31,8 @@ CAR_ENOPYTHON=7    # python3 ausente
 # shellcheck disable=SC2088
 car_expand_tilde() {
   case "$1" in
-    "~")   printf '%s' "$HOME" ;;
-    "~/"*) printf '%s' "$HOME/${1#\~/}" ;;
+    "~")   printf '%s' "$(car_canonical_home)" ;;
+    "~/"*) printf '%s' "$(car_canonical_home)/${1#\~/}" ;;
     *)     printf '%s' "$1" ;;
   esac
 }

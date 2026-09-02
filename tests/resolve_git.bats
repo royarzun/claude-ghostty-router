@@ -55,3 +55,32 @@ setup() {
   [ "$status" -eq 0 ]
   [[ "$output" == personal$'\t'* ]]
 }
+
+@test "resuelve aunque la ruta pase por un symlink" {
+  mkdir -p "$HOME/volumen"
+  make_repo "$HOME/volumen/miapp"
+  ln -s "$HOME/volumen" "$HOME/enlace"
+  write_conf \
+    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile work ~/.claude-work *@empresa.com #171b12" \
+    "route ~/volumen/miapp work"
+  car_load_config "$CAR_CONF"
+  run resolve_route "$HOME/enlace/miapp"
+  [ "$status" -eq 0 ]
+  [[ "$output" == work$'\t'miapp$'\t'* ]]
+}
+
+@test "resuelve por ruta fisica aunque el directorio no sea un repo git" {
+  # Sin repo, `root` y `main` quedan vacios: si la comparacion no canonicaliza,
+  # esto cae al perfil por defecto en silencio y se trabaja con otra cuenta.
+  mkdir -p "$HOME/volumen/notas"
+  ln -s "$HOME/volumen" "$HOME/enlace"
+  write_conf \
+    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile work ~/.claude-work *@empresa.com #171b12" \
+    "route ~/volumen/notas work"
+  car_load_config "$CAR_CONF"
+  run resolve_route "$HOME/enlace/notas"
+  [ "$status" -eq 0 ]
+  [[ "$output" == work$'\t'notas$'\t'* ]]
+}

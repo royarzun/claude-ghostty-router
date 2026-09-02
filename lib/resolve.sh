@@ -110,10 +110,14 @@ car_git_main() {
 # resolve_route <directorio>
 # -> perfil<TAB>proyecto<TAB>config-dir<TAB>email-glob<TAB>color
 #
-# Candidatos, en orden: el directorio, la raiz de su repo, el repo principal
-# (que difiere solo en worktrees). El primero que case una ruta gana.
+# Candidatos, en orden: el directorio tal cual se escribio, su forma fisica
+# (symlinks resueltos, para casar con lo que git y routes.conf emiten), la
+# raiz de su repo, y el repo principal (que difiere solo en worktrees). El
+# primero que case una ruta gana. No se quita "$dir": una ruta escrita en
+# forma logica debe seguir casando por el camino literal.
 resolve_route() {
-  local dir="$1" root main label cand profile
+  local dir="$1" phys root main label cand profile
+  phys="$(cd -P "$dir" 2>/dev/null && pwd)" || phys=""
   root="$(car_git_root "$dir")"
   if [ -n "$root" ]; then
     label="$(basename "$root")"
@@ -123,7 +127,7 @@ resolve_route() {
     main=""
   fi
 
-  for cand in "$dir" "$root" "$main"; do
+  for cand in "$dir" "$phys" "$root" "$main"; do
     [ -n "$cand" ] || continue
     if profile="$(car_match_dir "$cand")"; then
       car_emit_profile "$profile" "$label"
