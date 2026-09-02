@@ -241,7 +241,7 @@ pisa un `statusLine` que no haya puesto él.
 
 ```sh
 brew install bats-core shellcheck
-bats tests/                                          # 128 tests
+bats tests/                                          # 136 tests
 shellcheck -s bash bin/claude-account install.sh lib/*.sh
 ```
 
