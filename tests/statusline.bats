@@ -16,8 +16,12 @@ badge() {
   statusline_json "${1:-$HOME/repos/miapp}" | "$CA" statusline
 }
 
-VERDE="$(printf '\033[1;38;2;143;188;90m')"
-FIN="$(printf '\033[0m')"
+# La barra del perfil 'work': #8fbc5a = rgb(143,188,90), luminancia 163 -> negro.
+# Fijar la linea entera byte a byte prueba de paso lo que mas importa aqui: que
+# hay UN solo 48;2 y UN solo reset, con el nombre del perfil en negrita dentro.
+barra() {
+  printf '\033[48;2;143;188;90;38;2;0;0;0m \033[1m%s\033[22m%s \033[0m' "$1" "$2"
+}
 
 @test "sin CLAUDE_CONFIG_DIR el badge es el del perfil por defecto" {
   # Es el caso real del perfil por defecto: _launch-check no exporta la
@@ -37,10 +41,10 @@ FIN="$(printf '\033[0m')"
   [ "$output" = "personal · tu-email@ejemplo.com · miapp" ]
 }
 
-@test "el perfil se pinta con su color" {
+@test "la linea entera va sobre el fondo del perfil, con el nombre en negrita" {
   make_profile ".claude-work" "ricardo@empresa.com"
   CLAUDE_CONFIG_DIR="$HOME/.claude-work" run badge
-  [ "$output" = "${VERDE}work${FIN} · ricardo@empresa.com · miapp" ]
+  [ "$output" = "$(barra "work" " · ricardo@empresa.com · miapp")" ]
 }
 
 @test "una barra final en CLAUDE_CONFIG_DIR sigue casando el perfil" {
@@ -59,14 +63,14 @@ FIN="$(printf '\033[0m')"
 @test "un perfil sin sesion lo dice en vez de inventar" {
   make_profile ".claude-work"
   CLAUDE_CONFIG_DIR="$HOME/.claude-work" run badge
-  [ "$output" = "${VERDE}work${FIN} · (sin sesion) · miapp" ]
+  [ "$output" = "$(barra "work" " · (sin sesion) · miapp")" ]
 }
 
 @test "un archivo de identidad corrupto tambien sale como sin sesion" {
   make_profile ".claude-work"
   printf 'no soy json\n' > "$HOME/.claude-work/.claude.json"
   CLAUDE_CONFIG_DIR="$HOME/.claude-work" run badge
-  [ "$output" = "${VERDE}work${FIN} · (sin sesion) · miapp" ]
+  [ "$output" = "$(barra "work" " · (sin sesion) · miapp")" ]
 }
 
 @test "con routes.conf roto avisa y sale con exito" {

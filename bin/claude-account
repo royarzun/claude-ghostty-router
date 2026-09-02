@@ -30,7 +30,7 @@ CAR_CONF="${CAR_CONF:-$HOME/.config/claude-ghostty-router/routes.conf}"
 # si alguien esquiva la funcion del shell con `command claude`, el badge lo
 # delata en vez de repetir la version oficial de los hechos.
 cmd_statusline() {
-  local config_dir default_dir i profile color identity datos project label email
+  local config_dir default_dir i profile color identity datos project label email rest
   local payload=""
 
   # Claude Code escribe el JSON en nuestro stdin. Se lee entero y de una vez,
@@ -62,7 +62,8 @@ cmd_statusline() {
   done
 
   if ! command -v python3 >/dev/null 2>&1; then
-    printf '%s\n' "$(badge_color "$profile" "$color") · (sin python3)"
+    badge_bar "$color" "$(badge_sanitize "$profile")" " · (sin python3)"
+    printf '\n'
     return 0
   fi
 
@@ -77,8 +78,13 @@ cmd_statusline() {
   label="${project##*/}"
   [ -n "$email" ] || email="(sin sesion)"
 
-  printf '%s · %s' "$(badge_color "$profile" "$color")" "$(badge_sanitize "$email")"
-  [ -n "$label" ] && printf ' · %s' "$(badge_sanitize "$label")"
+  # La linea se arma entera y se envuelve UNA vez: el fondo tiene que cubrir
+  # tambien el email y la carpeta, no solo el nombre del perfil. Cada campo
+  # pasa por badge_sanitize -el perfil tambien, que hasta ahora se saneaba de
+  # rebote dentro de badge_color- porque el recorte a 60 va por campo.
+  rest=" · $(badge_sanitize "$email")"
+  [ -n "$label" ] && rest="$rest · $(badge_sanitize "$label")"
+  badge_bar "$color" "$(badge_sanitize "$profile")" "$rest"
   printf '\n'
   return 0
 }
