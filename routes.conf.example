@@ -1,0 +1,22 @@
+# claude-ghostty-router — rutas de carpetas a cuentas Claude.
+#
+#   profile <nombre> <config-dir> [email-glob] [color-de-fondo]
+#     email-glob: patron que DEBE cumplir la cuenta logueada. "-" = no verificar.
+#     color:      #rrggbb del fondo de la superficie. "-" = respetar el tema.
+#
+#   route <ruta> <perfil>
+#     Gana la primera ruta declarada: declara las excepciones antes que el padre.
+#     Se permiten globs. Un subdirectorio hereda la ruta de su padre, y una
+#     carpeta dentro de un repo git hereda la ruta de la raiz del repo.
+#
+# Los campos se separan por espacios, asi que una ruta que CONTENGA espacios no
+# es representable: se partiria en dos campos. Si ocurre, el sintoma es un
+# config-dir inexistente y Claude no arranca, mostrando la ruta truncada.
+#
+# El primer perfil declarado es el perfil por defecto.
+
+profile personal  ~/.claude       royarzun@gmail.com  -
+profile work      ~/.claude-work  *@tuempresa.com     #171b12
+
+# route ~/repos/proyecto-de-trabajo  work
+# route ~/repos/cliente-*            work
