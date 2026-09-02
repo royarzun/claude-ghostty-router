@@ -244,6 +244,8 @@ car_fail() { printf '  FALLA %s\n' "$1"; car_check_bad=$((car_check_bad + 1)); }
 # car_colores <indice>
 # El color del badge del perfil, pintado como se vera el badge: un tono que no
 # convenza se delata aqui, en vez de descubrirse dentro de la sesion.
+# El mismo valor va dos veces a badge_bar: el hex hace de destacado sobre su
+# propio fondo, para verse pintado con exactamente su color.
 # Linea informativa y no una comprobacion: no toca car_check_ok ni car_check_bad.
 car_colores() {
   local i="$1"

@@ -1,7 +1,7 @@
 # El fondo del badge — Diseño
 
 **Fecha:** 2026-09-02
-**Estado:** aprobado, sin implementar
+**Estado:** implementado
 
 **Modifica:** [2026-09-02-badge-en-statusline-design.md](2026-09-02-badge-en-statusline-design.md)
 

@@ -2,9 +2,9 @@
 #
 #   profile <nombre> <config-dir> [email-glob] [color-del-badge]
 #     email-glob: patron que DEBE cumplir la cuenta logueada. "-" = no verificar.
-#     color:      #rrggbb con el que se pinta el nombre del perfil en el badge
-#                 que se ve dentro de Claude Code. "-" = sin color. Conviene un
-#                 tono legible sobre el fondo de tu tema, no un tinte apagado.
+#     color:      #rrggbb con el que se pinta el fondo de la linea del badge
+#                 que se ve dentro de Claude Code. "-" = sin fondo. El color
+#                 del texto no se declara: se calcula para que se lea encima.
 #
 #   route <ruta> <perfil>
 #     Gana la primera ruta declarada: declara las excepciones antes que el padre.
