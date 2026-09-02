@@ -24,6 +24,16 @@ perfiles_ok() {
   [[ "$output" == *"routes.conf valido"* ]]
 }
 
+# #8fbc5a = rgb(143, 188, 90): la prueba fija la secuencia SGR completa, no un
+# substring del hex, porque un check que solo imprimiera el hex plano (sin
+# pintarlo) tambien haria pasar una comprobacion mas floja.
+@test "el badge del perfil sale pintado con su propio color" {
+  perfiles_ok
+  run "$CA" check
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"$(printf '\033[1;38;2;143;188;90m#8fbc5a\033[0m')"* ]]
+}
+
 @test "un perfil sin sesion hace fallar el check" {
   perfiles_ok
   rm -f "$HOME/.claude-work/.claude.json"

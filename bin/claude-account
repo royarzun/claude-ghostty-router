@@ -233,6 +233,15 @@ car_check_bad=0
 car_ok()   { printf '  ok   %s\n' "$1"; car_check_ok=$((car_check_ok + 1)); }
 car_fail() { printf '  FALLA %s\n' "$1"; car_check_bad=$((car_check_bad + 1)); }
 
+# car_colores <indice>
+# El color del badge del perfil, pintado con el mismo: un tono ilegible sobre
+# el tema se delata aqui, en vez de descubrirse dentro de la sesion.
+# Linea informativa y no una comprobacion: no toca car_check_ok ni car_check_bad.
+car_colores() {
+  local i="$1"
+  printf '       badge %s\n' "$(badge_color "${CAR_P_COLOR[$i]}" "${CAR_P_COLOR[$i]}")"
+}
+
 cmd_check() {
   local i j email status expires now dias creds settings
 
@@ -257,6 +266,7 @@ cmd_check() {
 
   echo "Perfiles"
   for ((i = 0; i < ${#CAR_P_NAME[@]}; i++)); do
+    car_colores "$i"
     email="$(identity_email "${CAR_P_DIR[$i]}" 2>/dev/null)"
     status=$?
     if [ $status -ne 0 ]; then
