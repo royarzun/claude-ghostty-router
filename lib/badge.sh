@@ -40,3 +40,44 @@ badge_color() {
       ;;
   esac
 }
+
+# badge_fg <r> <g> <b> -> el frente que se lee sobre ese fondo, como "R;G;B".
+# Luminancia YIQ: la formula de contraste de la WCAG exige linearizar cada canal
+# antes de pesarlo, y para elegir entre exactamente dos frentes -negro o blanco-
+# no cambia el resultado. Aritmetica entera: bash 3.2 no tiene otra.
+badge_fg() {
+  local lum=$(( (299 * $1 + 587 * $2 + 114 * $3) / 1000 ))
+  if [ "$lum" -ge 140 ]; then
+    printf '0;0;0'
+  else
+    printf '255;255;255'
+  fi
+}
+
+# badge_bar <color|-> <destacado> [resto] -> la linea entera sobre el fondo.
+# El destacado va en negrita y la emite esta funcion, no quien llama: un escape
+# armado por fuera se lo comeria el filtro de control, y con razon, porque el
+# filtro no puede distinguirlo de uno colado por un nombre de carpeta.
+# Cierra con 22m y no con 0m: un reset a mitad de linea apagaria tambien el
+# fondo y partiria la barra en dos.
+# Un color ausente, "-" o mal formado devuelve el texto tal cual, sin barra y
+# sin los espacios de guarda: el badge informa igual sin color, y aqui nada
+# puede fallar de forma ruidosa.
+badge_bar() {
+  local color="${1:--}" strong rest red green blue fg
+  strong="$(badge_strip "${2:-}")"
+  rest="$(badge_strip "${3:-}")"
+  case "$color" in
+    '#'[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F])
+      red="$(printf '%d' "0x${color:1:2}")"
+      green="$(printf '%d' "0x${color:3:2}")"
+      blue="$(printf '%d' "0x${color:5:2}")"
+      fg="$(badge_fg "$red" "$green" "$blue")"
+      printf '\033[48;2;%s;%s;%s;38;2;%sm \033[1m%s\033[22m%s \033[0m' \
+        "$red" "$green" "$blue" "$fg" "$strong" "$rest"
+      ;;
+    *)
+      printf '%s%s' "$strong" "$rest"
+      ;;
+  esac
+}
