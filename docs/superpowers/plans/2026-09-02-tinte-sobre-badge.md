@@ -48,6 +48,7 @@ shellcheck -s bash bin/claude-account install.sh lib/*.sh   # lint
 | `lib/ghostty.sh` | Vuelve, con `ghostty_bg` y nada más. | 2 |
 | `lib/badge.sh` | Solo el comentario de cabecera. | 2 |
 | `shell/router.zsh` | El teñido alrededor de la sesión. | 4 |
+| `bin/claude-account` | ...y que `check` muestre los dos colores de cada perfil. | 5 |
 | `routes.conf.example`, `README.md` | El quinto campo. | 5 |
 
 ---
@@ -800,10 +801,48 @@ SIGINT no deje el tab tenido."
 
 ---
 
-### Task 5: Documentación
+### Task 5: Diagnóstico y documentación
+
+Los campos cuarto y quinto son adyacentes, con la misma sintaxis `#rrggbb` y significados
+opuestos. Intercambiarlos parsea limpio, sale con 0, y produce un badge ilegible y ningún
+tinte: el fallo caracteristico de esta feature es **silencioso**, y este repo trata el
+silencio como el peor resultado posible. `check` existe justo para eso.
 
 **Files:**
-- Modify: `routes.conf.example`, `README.md`
+- Modify: `bin/claude-account` (`cmd_check`), `tests/check.bats`, `routes.conf.example`, `README.md`
+
+- [ ] **Step 0: Que `check` muestre los dos colores de cada perfil**
+
+Primero el test. En `tests/check.bats`, después de `"todo en orden sale con 0"`:
+
+```bash
+@test "check muestra los dos colores de cada perfil" {
+  # Los campos cuarto y quinto son adyacentes y con la misma sintaxis: un
+  # intercambio parsea limpio y solo se nota mirando el resultado. Verlos aqui
+  # es lo unico que convierte ese fallo silencioso en uno visible.
+  write_conf \
+    "profile personal ~/.claude tu-email@ejemplo.com - -" \
+    "profile work ~/.claude-work *@empresa.com #8fbc5a #171b12" \
+    "route ~/repos/miapp work"
+  perfiles_ok
+  run "$CA" check
+  [[ "$output" == *"badge #8fbc5a"* ]]
+  [[ "$output" == *"fondo #171b12"* ]]
+}
+```
+
+Ojo con el `setup()` de ese archivo: define su propia `write_conf` y `perfiles_ok` crea los
+perfiles. Lee el archivo entero antes de tocarlo y respeta el orden que ya usa.
+
+Luego, en `cmd_check`, dentro del bucle de `Perfiles`, después de la línea que reporta el
+email (`car_ok "${CAR_P_NAME[$i]}: $email"` y su rama de fallo), añade una línea informativa
+—no un `car_ok`, que contaria como comprobación— con los dos colores del perfil:
+
+```bash
+    printf '       badge %s · fondo %s\n' "${CAR_P_COLOR[$i]}" "${CAR_P_TINT[$i]}"
+```
+
+Es una línea informativa, con la misma sangría que ya usa el aviso de token por vencer.
 
 - [ ] **Step 1: `routes.conf.example`**
 
@@ -855,8 +894,12 @@ Comprueba que el número del README coincide con el que sale aquí.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add routes.conf.example README.md
-git commit -m "docs: el quinto campo y el tinte de fondo"
+git add bin/claude-account tests/check.bats routes.conf.example README.md
+git commit -m "feat: check muestra los dos colores de cada perfil
+
+Los campos son adyacentes, con la misma sintaxis y significados
+opuestos: intercambiarlos parsea limpio. Verlos es lo que convierte
+ese fallo silencioso en uno visible."
 ```
 
 ---
