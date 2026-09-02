@@ -2,6 +2,8 @@
 # No sabe que es un perfil: recibe texto y color, y emite bytes.
 
 CAR_BADGE_MAX=60
+# umbral de luminancia YIQ: a partir de aqui el frente pasa a ser negro.
+CAR_BADGE_LUM=140
 
 # badge_strip <texto> -> el texto sin bytes de control.
 # El badge se arma con un nombre de carpeta y con un email leido de un archivo,
@@ -45,9 +47,14 @@ badge_color() {
 # Luminancia YIQ: la formula de contraste de la WCAG exige linearizar cada canal
 # antes de pesarlo, y para elegir entre exactamente dos frentes -negro o blanco-
 # no cambia el resultado. Aritmetica entera: bash 3.2 no tiene otra.
+# Bash evalua los subindices de array dentro de una expansion aritmetica, asi
+# que un argumento no numerico aqui seria ejecucion de comandos: el guardia
+# corta antes de esa expansion. Hoy solo la llama badge_bar, con digitos ya
+# validados contra "#rrggbb"; el guardia es para el que la llame despues.
 badge_fg() {
+  case "$1$2$3" in *[!0-9]*) printf '0;0;0'; return ;; esac
   local lum=$(( (299 * $1 + 587 * $2 + 114 * $3) / 1000 ))
-  if [ "$lum" -ge 140 ]; then
+  if [ "$lum" -ge "$CAR_BADGE_LUM" ]; then
     printf '0;0;0'
   else
     printf '255;255;255'

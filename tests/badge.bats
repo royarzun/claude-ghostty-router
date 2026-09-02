@@ -110,3 +110,39 @@ setup() {
   [ "$status" -eq 0 ]
   [ "$output" = "ma[31mlo$largo" ]
 }
+
+@test "el umbral exacto de luminancia: 140 es negro, 139 es blanco" {
+  # Los dos colores de los otros tests estan lejos del umbral, asi que un
+  # cambio de -ge a -gt pasaria la suite sin que nadie se entere.
+  run badge_fg 140 140 140
+  [ "$output" = "0;0;0" ]
+  run badge_fg 139 139 139
+  [ "$output" = "255;255;255" ]
+}
+
+@test "un argumento no numerico en badge_fg no se evalua: sale con negro y no ejecuta nada" {
+  # Bash evalua los subindices de array dentro de una expansion aritmetica, asi
+  # que un argumento no numerico aqui seria ejecucion de comandos. El guardia
+  # tiene que cortar antes de que esa expansion llegue a evaluarse.
+  local testigo="$BATS_TEST_TMPDIR/pwned_arith"
+  local malo
+  malo="a[\$(touch $testigo)]"
+  run badge_fg "$malo" 2 3
+  [ "$status" -eq 0 ]
+  [ "$output" = "0;0;0" ]
+  [ ! -e "$testigo" ]
+}
+
+@test "un color en mayusculas pinta la barra igual que en minusculas" {
+  # routes.conf lo escribe un humano: las mayusculas tienen que funcionar.
+  run badge_bar "#8FBC5A" "work" ""
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(printf '\033[48;2;143;188;90;38;2;0;0;0m \033[1mwork\033[22m \033[0m')" ]
+}
+
+@test "la barra filtra los bytes de control tambien cuando si pinta el fondo" {
+  # El test anterior de filtrado solo ejercita el camino sin barra (color "-").
+  run badge_bar "#8fbc5a" "$(printf 'ma\033[31mlo')" "$(printf ' · b\033[0mc')"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(printf '\033[48;2;143;188;90;38;2;0;0;0m \033[1mma[31mlo\033[22m · b[0mc \033[0m')" ]
+}
