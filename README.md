@@ -3,8 +3,6 @@
 Enruta cada carpeta a la cuenta de Claude Code que le corresponde, dentro de [Ghostty](https://ghostty.org).
 
 - Dentro de cada sesión, un **badge** dice con qué cuenta está corriendo Claude.
-- Desde fuera, un **tinte** en el fondo del tab dice que hay una sesión corriendo, sin tener
-  que entrar a leer el contenido.
 - Si la cuenta logueada no es la esperada para esa carpeta, **Claude no arranca**.
 - Fuera de Ghostty todo se comporta exactamente como antes.
 
@@ -72,28 +70,22 @@ cada `settings.json` queda como estaba.
 Un solo archivo, `~/.config/claude-ghostty-router/routes.conf`:
 
 ```conf
-#       <nombre>  <config-dir>    <email-glob>        <badge>    <fondo>
-profile personal  ~/.claude       yo@gmail.com        -          -
-profile work      ~/.claude-work  *@empresa.com       #e0a458    #171b12
+#       <nombre>  <config-dir>    <email-glob>        <color>
+profile personal  ~/.claude       yo@gmail.com        -
+profile work      ~/.claude-work  *@empresa.com       #e0a458
 
 route ~/repos/proyecto-de-trabajo  work
 route ~/repos/cliente-*            work
 ```
 
-**`profile <nombre> <config-dir> [email-glob] [badge] [fondo]`**
+**`profile <nombre> <config-dir> [email-glob] [color]`**
 
 - `config-dir` es el `CLAUDE_CONFIG_DIR` de esa cuenta. Cada perfil tiene su propio login.
 - `email-glob` es el patrón que **debe** cumplir la cuenta logueada ahí. `-` desactiva la
   verificación de ese perfil, lo que anula la única garantía que da esta herramienta: úsalo
   solo si sabes por qué.
-- `badge` es el `#rrggbb` con el que se pinta el nombre del perfil en el badge que se ve
-  dentro de Claude Code. `-` lo deja sin color. Conviene un tono **legible** sobre el fondo de
-  tu tema: es texto.
-- `fondo` es el `#rrggbb` del fondo del tab mientras corre Claude en una carpeta de ese
-  perfil. `-` no tiñe nada. Conviene un tinte **apenas perceptible** sobre tu fondo habitual:
-  se reconoce de reojo sin arruinar el tema. Son campos adyacentes, con la misma sintaxis y
-  significados opuestos — el color que sirve de badge ciega de fondo, y es el error fácil de
-  cometer; `claude-account check` muestra los dos juntos para poder compararlos.
+- `color` es el `#rrggbb` con el que se pinta el nombre del perfil en el badge. `-` lo deja
+  sin color. Conviene un tono legible sobre el fondo de tu tema: es texto, no un tinte.
 
 **`route <ruta> <perfil>`**
 
@@ -164,19 +156,17 @@ Pero quien detiene el arranque es siempre el shim, nunca el badge.
 | `lib/resolve.sh` | `directorio → perfil`. |
 | `lib/identity.{sh,py}` | `perfil → email logueado`. **Nunca lee tokens.** |
 | `lib/statusline.py` | Carpeta del JSON de stdin + email del perfil, en un solo fork. |
-| `lib/badge.sh` | Emite SGR: el texto coloreado del badge, dentro de Claude Code. |
-| `lib/ghostty.sh` | Emite OSC: el tinte de fondo del tab, al emulador de terminal. |
+| `lib/badge.sh` | Único emisor de secuencias de escape del proyecto. |
 | `lib/settings.py` | Mete y saca la clave `statusLine` de un `settings.json` ajeno. |
 | `bin/claude-account` | El CLI, y la verificación *fail-closed*. |
 | `shell/router.zsh` | La función `claude()`. |
 
-El núcleo es puro: entran datos, salen datos, sin efectos secundarios. Solo `lib/badge.sh` y
-`lib/ghostty.sh` emiten escapes —el primero al proceso de Claude Code, el segundo al emulador
-de terminal— y solo el shim decide bloquear.
+El núcleo es puro: entran datos, salen datos, sin efectos secundarios. Solo `lib/badge.sh`
+emite escapes, y solo el shim decide bloquear.
 
 `shell/router.zsh` se auto-desactiva si `TERM != xterm-ghostty`, así que no afecta a scripts,
-cron ni a la terminal integrada de un editor. No engancha ningún hook de `precmd` ni repinta
-en cada prompt: sustituye a `claude`, tiñe el fondo alrededor de esa sesión, y nada más.
+cron ni a la terminal integrada de un editor. No pinta nada ni engancha ningún hook de prompt:
+sustituye a `claude` y nada más.
 
 **El shell nunca exporta `CLAUDE_CONFIG_DIR` por su cuenta.** La variable se define únicamente
 en el proceso de Claude ya verificado, para que ningún script que esquive la función acabe
@@ -197,16 +187,6 @@ la sesión está corriendo de verdad, que el comando hereda por ser hijo del pro
 Por eso el badge dice lo que *es* y no lo que debería ser: si esquivas la función con
 `command claude`, lo verás decir `personal` en una carpeta de trabajo. Cuesta un solo proceso
 de `python3` por refresco, y no llama a `git` ni resuelve rutas.
-
-### El tinte
-
-`claude()` tiñe el fondo del tab (`lib/ghostty.sh`, vía `OSC 11`) con el color del quinto
-campo del perfil apenas arranca la sesión, y lo devuelve al color del tema (`OSC 111`) cuando
-termina. Ese despintado vive en un bloque `always`, no en la línea siguiente a la sesión:
-verificado con un zsh interactivo real, un `Ctrl-C` corta el resto de la función, y sin
-`always` el tab se quedaría teñido hasta cerrarlo. El hook `zshexit` es la red para el otro
-camino que `always` no cubre en la misma shell: suspender la sesión con `Ctrl-Z` y cerrar el
-tab sin volver a ella.
 
 ### Seguridad
 
@@ -243,17 +223,12 @@ pisa un `statusLine` que no haya puesto él.
   sigue funcionando.
 - **El badge solo se ve en el split enfocado.** Un tab en reposo no dice a qué cuenta
   pertenece: para eso haría falta el título, y sostenerlo cuesta el título de Ghostty.
-- **Un `claude` lanzado en una subshell** —`(claude)` o `claude &`— tiñe el tab pero queda
-  fuera de la red de seguridad: el marcador de "está teñido" vive en una copia privada de la
-  variable de esa subshell, que nunca vuelve a la shell padre. Si esa subshell muere antes de
-  que corra su propio bloque `always`, el tinte se queda puesto. Es cosmético y se arregla
-  abriendo un tab nuevo, pero mejor saberlo que descubrirlo.
 
 ## Desarrollo
 
 ```sh
 brew install bats-core shellcheck
-bats tests/                                          # 154 tests
+bats tests/                                          # 127 tests
 shellcheck -s bash bin/claude-account install.sh lib/*.sh
 ```
 

@@ -3,8 +3,6 @@
 **Fecha:** 2026-09-02
 **Estado:** reemplazada por [2026-09-02-badge-en-statusline-design.md](2026-09-02-badge-en-statusline-design.md), sin implementar
 
-**La parte del tinte se rehizo en** [2026-09-02-tinte-sobre-badge-design.md](2026-09-02-tinte-sobre-badge-design.md): el badge no cubre la señal de «hay sesión» vista desde fuera de Claude, así que teñir el fondo mientras corre la sesión volvió, ya sobre el diseño del badge y con su propio campo en `routes.conf`.
-
 **Modifica:** [2026-09-01-claude-ghostty-router-design.md](2026-09-01-claude-ghostty-router-design.md)
 
 > Se conserva porque explica por qué se descartó el marcado permanente del tab. Lo que no

@@ -48,24 +48,3 @@ run_zsh() {
   run_zsh "print -r -- \"omz=\${DISABLE_AUTO_TITLE:-sin-tocar}\""
   [[ "$output" == *"omz=sin-tocar"* ]]
 }
-
-@test "el hook de salida despinta si una sesion quedo suspendida" {
-  # El bloque always de claude() cubre la salida normal. Este hook cubre el
-  # unico camino que no: suspender Claude con Ctrl-Z y cerrar el tab sin
-  # volver a la sesion. Se simula dejando puesta la marca que ese bloque
-  # habria vaciado.
-  run_zsh "_car_tinted=1"
-  [ "$output" = "$(printf '\033]111\007')" ]
-}
-
-@test "cargar el router limpia una marca de tenido heredada" {
-  # _car_tinted no se exporta, asi que hoy no puede llegar del entorno. Si
-  # alguna vez llegara, el hook de salida despintaria un tab que nunca se
-  # tino: la inicializacion del router es lo unico que lo impide.
-  run env -u CAR_ROUTER_LOADED _car_tinted=1 TERM=xterm-ghostty zsh -f -c "
-    export CAR_CONF='$CAR_CONF'
-    export PATH='$PATH'
-    source '$CAR_ROOT/shell/router.zsh'
-  "
-  [ -z "$output" ]
-}

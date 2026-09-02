@@ -55,30 +55,3 @@ setup() {
   run badge_color "$(printf 'ma\033[31mlo')" "#8fbc5a"
   [ "$output" = "$(printf '\033[1;38;2;143;188;90mma[31mlo\033[0m')" ]
 }
-
-@test "el bloque sale con el color de fondo en SGR" {
-  run badge_swatch "#171b12"
-  [ "$status" -eq 0 ]
-  [ "$output" = "$(printf '\033[48;2;23;27;18m   \033[0m')" ]
-}
-
-@test "el guion no pinta ningun bloque" {
-  run badge_swatch "-"
-  [ "$status" -eq 0 ]
-  [ -z "$output" ]
-}
-
-@test "un color invalido no pinta ningun bloque" {
-  # Mismo contrato que badge_color: aqui nada puede fallar de forma ruidosa.
-  run badge_swatch "rojo; rm -rf /"
-  [ "$status" -eq 0 ]
-  [ -z "$output" ]
-}
-
-@test "sin argumento no pinta ningun bloque" {
-  # Se carga en un script con `set -u`, donde un "$1" ausente mataria el
-  # proceso entero y no solo esta funcion.
-  run bash -c "set -u; . '$CAR_ROOT/lib/badge.sh'; badge_swatch"
-  [ "$status" -eq 0 ]
-  [ -z "$output" ]
-}

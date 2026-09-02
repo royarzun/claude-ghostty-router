@@ -24,19 +24,18 @@ perfiles_ok() {
   [[ "$output" == *"routes.conf valido"* ]]
 }
 
-@test "check muestra los dos colores de cada perfil" {
-  # Los campos cuarto y quinto son adyacentes y con la misma sintaxis: un
-  # intercambio parsea limpio y solo se nota mirando el resultado. Verlos aqui
-  # es lo unico que convierte ese fallo silencioso en uno visible.
-  write_conf \
-    "profile personal ~/.claude tu-email@ejemplo.com - -" \
-    "profile work ~/.claude-work *@empresa.com #8fbc5a #171b12" \
-    "route ~/repos/miapp work"
+# #8fbc5a = rgb(143, 188, 90). La prueba fija la secuencia SGR completa pegada
+# a la linea de SU perfil (no solo que aparezca en algun sitio del output):
+# un badge impreso encima del perfil anterior, o el de otro perfil, tambien
+# haria pasar una comprobacion que solo buscara la secuencia suelta.
+@test "el badge del perfil sale pintado con su propio color, debajo de su perfil" {
   perfiles_ok
   run "$CA" check
-  [[ "$output" == *"$(printf '\033[1;38;2;143;188;90m#8fbc5a\033[0m')"* ]]
-  [[ "$output" == *"#171b12"* ]]
-  [[ "$output" == *"$(printf '\033[48;2;23;27;18m')"* ]]
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"work: ricardo@empresa.com"$'\n'"       badge $(printf '\033[1;38;2;143;188;90m#8fbc5a\033[0m')"* ]]
+  # personal no declara color ("-" en routes.conf): fijar tambien su linea
+  # detecta ademas que las dos lineas no se hayan intercambiado entre si.
+  [[ "$output" == *"personal: tu-email@ejemplo.com"$'\n'"       badge -"* ]]
 }
 
 @test "un perfil sin sesion hace fallar el check" {

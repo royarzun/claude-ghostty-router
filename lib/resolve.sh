@@ -1,7 +1,7 @@
 # Resolucion directorio -> perfil. Requiere lib/config.sh cargado.
 # bash 3.2 no tiene arrays asociativos: se usan arrays paralelos.
 
-CAR_P_NAME=(); CAR_P_DIR=(); CAR_P_GLOB=(); CAR_P_COLOR=(); CAR_P_TINT=()
+CAR_P_NAME=(); CAR_P_DIR=(); CAR_P_GLOB=(); CAR_P_COLOR=()
 CAR_R_PATH=(); CAR_R_PROFILE=()
 
 # car_profile_index <nombre> -> imprime el indice, o retorna 1 si no existe
@@ -21,21 +21,21 @@ car_profile_index() {
 # literales, sin espacios ni comodines); shellcheck analiza este archivo aislado
 # y no puede verlo, por eso cree que $CAR_OK/$CAR_ECONFIG sin comillas es riesgoso.
 car_load_config() {
-  local file="$1" parsed kind f2 f3 f4 f5 f6 i
+  local file="$1" parsed kind f2 f3 f4 f5 i
 
-  CAR_P_NAME=(); CAR_P_DIR=(); CAR_P_GLOB=(); CAR_P_COLOR=(); CAR_P_TINT=()
+  CAR_P_NAME=(); CAR_P_DIR=(); CAR_P_GLOB=(); CAR_P_COLOR=()
   CAR_R_PATH=(); CAR_R_PROFILE=()
 
   parsed="$(config_parse "$file")" || return $CAR_ECONFIG
 
-  while IFS=$'\t' read -r kind f2 f3 f4 f5 f6; do
+  while IFS=$'\t' read -r kind f2 f3 f4 f5; do
     case "$kind" in
       profile)
         if car_profile_index "$f2" >/dev/null; then
           echo "claude-account: perfil duplicado '$f2' en $file" >&2
           return $CAR_ECONFIG
         fi
-        CAR_P_NAME+=("$f2"); CAR_P_DIR+=("$f3"); CAR_P_GLOB+=("$f4"); CAR_P_COLOR+=("$f5"); CAR_P_TINT+=("$f6")
+        CAR_P_NAME+=("$f2"); CAR_P_DIR+=("$f3"); CAR_P_GLOB+=("$f4"); CAR_P_COLOR+=("$f5")
         ;;
       route)
         CAR_R_PATH+=("$f2"); CAR_R_PROFILE+=("$f3")
@@ -68,8 +68,8 @@ car_emit_profile() {
     echo "claude-account: perfil desconocido '$name'" >&2
     return $CAR_ECONFIG
   }
-  printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "$name" "$label" "${CAR_P_DIR[$i]}" "${CAR_P_GLOB[$i]}" "${CAR_P_COLOR[$i]}" "${CAR_P_TINT[$i]}"
+  printf '%s\t%s\t%s\t%s\t%s\n' \
+    "$name" "$label" "${CAR_P_DIR[$i]}" "${CAR_P_GLOB[$i]}" "${CAR_P_COLOR[$i]}"
 }
 
 # car_match_dir <directorio> -> imprime el perfil de la primera ruta que casa
@@ -108,7 +108,7 @@ car_git_main() {
 }
 
 # resolve_route <directorio>
-# -> perfil<TAB>proyecto<TAB>config-dir<TAB>email-glob<TAB>color<TAB>fondo
+# -> perfil<TAB>proyecto<TAB>config-dir<TAB>email-glob<TAB>color
 #
 # Candidatos, en orden: el directorio tal cual se escribio, su forma fisica
 # (symlinks resueltos, para casar con lo que git y routes.conf emiten), la
