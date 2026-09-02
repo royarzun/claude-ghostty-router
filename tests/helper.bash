@@ -14,10 +14,6 @@ setup_fixture() {
   export HOME="$base/home"
   export CAR_CONF="$base/routes.conf"
   mkdir -p "$HOME"
-  # CAR_HOME se cachea entre invocaciones dentro del mismo proceso; sin este
-  # unset, un test que reutilice el proceso arrastraria el HOME de un test
-  # anterior.
-  unset CAR_HOME
 }
 
 # write_conf "linea 1" "linea 2" ...
