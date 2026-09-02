@@ -86,10 +86,16 @@ Es la cara humana del núcleo; no participa en el arranque de Claude.
 
 Se carga desde `.zshrc` y **se auto-desactiva si `TERM != xterm-ghostty`**. Aporta:
 
-- **Hook `chpwd` + init**: al entrar a un directorio resuelve el perfil y repinta *esa*
+- **Hook `precmd`**: en cada prompt resuelve el perfil del directorio y repinta *esa*
   superficie (título + fondo). Caché en memoria por directorio, invalidada por `mtime` de
-  `routes.conf`, para no pagar un `git` en cada `cd`.
+  `routes.conf`: con caché caliente son ~40 bytes escritos y ningún proceso nuevo. Se pinta
+  en `precmd` y no en `chpwd` porque programas como `ssh` o `vim` ensucian el título sin
+  cambiar de directorio, y con `chpwd` quedaría sucio hasta el próximo `cd`.
 - **Hook `zshexit`**: reset del fondo al salir.
+- **`DISABLE_AUTO_TITLE=true`**: oh-my-zsh (instalado en `~/.zshrc`) reescribe el título en
+  cada prompt vía `termsupport`. El router lo desactiva **solo en sesiones Ghostty**;
+  oh-my-zsh consulta la variable en cada `precmd`, así que funciona sin importar el orden
+  de carga.
 - **Función `claude()`**: verifica y bloquea, o ejecuta el binario real con el
   `CLAUDE_CONFIG_DIR` del perfil.
 
@@ -129,7 +135,7 @@ trabajo (`*@tuempresa.com` es un marcador de posición), el directorio del perfi
 
 ### A — Entrar a una carpeta
 
-1. `chpwd` dispara.
+1. `precmd` dispara (cada prompt, y por tanto también después de cada `cd`).
 2. Si el directorio está en caché y `routes.conf` no cambió (`mtime`), se usa el cacheado.
 3. Si no: se busca prefijo de ruta. Si ninguno matchea, se resuelve la raíz del repo git
    (y para worktrees el repo principal vía `git rev-parse --git-common-dir`) y se reintenta
@@ -244,6 +250,8 @@ para poder afirmar *"esto no arrancó"* — la propiedad que de verdad importa.
 2. Crea `~/.config/claude-ghostty-router/routes.conf` desde el ejemplo; nunca lo sobrescribe.
 3. Agrega **una línea** a `~/.zshrc` que hace `source` de `shell/router.zsh`.
 4. Cambia `shell-integration-features` a `no-title` en la config de Ghostty, con backup previo.
+   (El otro reescritor de títulos, oh-my-zsh, lo desactiva el propio `router.zsh` en tiempo
+   de ejecución y solo dentro de Ghostty, sin tocar `~/.zshrc`.)
 5. Ejecuta `claude-account check` y muestra el resultado.
 
 `install.sh --uninstall` revierte los cuatro pasos.
@@ -261,6 +269,10 @@ para poder afirmar *"esto no arrancó"* — la propiedad que de verdad importa.
   `identity.sh`. `claude-account check` es la manera de detectarlo temprano.
 - **El fondo teñido depende del tema.** Cambiar el tema de Ghostty puede exigir recalibrar
   el hex del perfil.
+- **Rutas sin espacios.** El parser de `routes.conf` separa por espacios; una ruta con
+  espacios en el nombre no es representable. No hay ninguna en el equipo hoy.
+- **El título deja de mostrar el comando en curso.** Desactivar el auto-título de oh-my-zsh
+  es el precio de que el título diga de qué cuenta es el tab.
 
 ## Fuera de alcance
 
