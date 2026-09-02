@@ -146,3 +146,13 @@ setup() {
   [ "$status" -eq 0 ]
   [ "$output" = "$(printf '\033[48;2;143;188;90;38;2;0;0;0m \033[1mma[31mlo\033[22m · b[0mc \033[0m')" ]
 }
+
+@test "un canal con cero a la izquierda no se lee como octal" {
+  # Con el guardia filtrando a solo digitos, "008" pasa el filtro pero bash lo
+  # leeria como octal invalido y badge_fg saliria con error en vez de un color.
+  # 008 -> 8 en base 10: luminancia (299*8+587+114)/1000=3, por debajo del
+  # umbral -> frente blanco.
+  run badge_fg 008 1 1
+  [ "$status" -eq 0 ]
+  [ "$output" = "255;255;255" ]
+}

@@ -51,9 +51,11 @@ badge_color() {
 # que un argumento no numerico aqui seria ejecucion de comandos: el guardia
 # corta antes de esa expansion. Hoy solo la llama badge_bar, con digitos ya
 # validados contra "#rrggbb"; el guardia es para el que la llame despues.
+# El 10# fuerza base 10: sin el, un canal con cero a la izquierda se leeria
+# como octal y la funcion saldria con error en vez de con un color.
 badge_fg() {
   case "$1$2$3" in *[!0-9]*) printf '0;0;0'; return ;; esac
-  local lum=$(( (299 * $1 + 587 * $2 + 114 * $3) / 1000 ))
+  local lum=$(( (299 * 10#$1 + 587 * 10#$2 + 114 * 10#$3) / 1000 ))
   if [ "$lum" -ge "$CAR_BADGE_LUM" ]; then
     printf '0;0;0'
   else
