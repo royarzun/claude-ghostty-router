@@ -113,7 +113,7 @@ Añadir al final de `tests/badge.bats`:
 - [ ] **Step 2: Verificar que falla**
 
 Run: `bats tests/badge.bats`
-Expected: FAIL en ese test, con `badge_strip: command not found`. Los otros 9 en verde.
+Expected: FAIL en ese test, con `badge_strip: command not found`. Los otros 8 en verde.
 
 - [ ] **Step 3: Implementar**
 
@@ -144,7 +144,7 @@ badge_sanitize() {
 - [ ] **Step 4: Verificar que pasa**
 
 Run: `bats tests/badge.bats`
-Expected: 10 tests en verde.
+Expected: 9 tests en verde.
 
 Run: `bats tests/ && shellcheck -s bash bin/claude-account install.sh lib/*.sh`
 Expected: **129 tests** en verde, shellcheck sin salida.
@@ -220,7 +220,7 @@ Añadir al final de `tests/badge.bats`:
 - [ ] **Step 2: Verificar que fallan**
 
 Run: `bats tests/badge.bats`
-Expected: FAIL en los 6 nuevos, con `badge_bar: command not found`. Los 10 anteriores en verde.
+Expected: FAIL en los 6 nuevos, con `badge_bar: command not found`. Los 9 anteriores en verde.
 
 - [ ] **Step 3: Implementar**
 
@@ -272,7 +272,7 @@ badge_bar() {
 - [ ] **Step 4: Verificar que pasan**
 
 Run: `bats tests/badge.bats`
-Expected: 16 tests en verde.
+Expected: 15 tests en verde.
 
 Run: `bats tests/ && shellcheck -s bash bin/claude-account install.sh lib/*.sh`
 Expected: **135 tests** en verde, shellcheck sin salida.
@@ -452,7 +452,7 @@ car_colores() {
 - [ ] **Step 4: Verificar que pasa**
 
 Run: `bats tests/check.bats`
-Expected: 10 tests en verde.
+Expected: 9 tests en verde.
 
 - [ ] **Step 5: Borrar `badge_color` y sus tests**
 
