@@ -46,7 +46,7 @@ sabe cuándo empieza y termina una sesión.
 
 ```zsh
 claude() {
-  local config_dir tint rc
+  local config_dir tint rc=0
   config_dir=$(claude-account _launch-check "$PWD") || return $?
   tint=$(claude-account _tint "$PWD")
 
@@ -73,8 +73,15 @@ una decisión ya tomada.
 
 **El despintado va en un bloque `always`.** Si Claude muere por `SIGINT`, zsh aborta el
 resto de la función y un despintado escrito como línea siguiente nunca correría: el color se
-quedaría pegado al tab. `always` corre igual. El hook `zshexit` se conserva como red de
-seguridad para el caso en que se cierre el tab con una sesión suspendida con Ctrl-Z.
+quedaría pegado al tab. `always` corre igual. Por eso `rc` se inicializa a `0`: en ese camino
+`command claude` nunca llega a asignarlo, y `return $rc` con la variable vacía no significa
+nada.
+
+El hook `zshexit` se conserva como red de seguridad para el caso en que se cierre el tab con
+una sesión suspendida con Ctrl-Z. Pasa a llamar a `claude-account _untint` en vez de escribir
+el escape a mano, que es lo que hace hoy: forkar una vez al cerrar la shell no cuesta nada, y
+deja `lib/ghostty.sh` como único emisor de secuencias OSC del proyecto, que es lo que la
+tabla de arquitectura del README ya afirmaba.
 
 ## Lo que se elimina
 
@@ -88,7 +95,7 @@ oh-my-zsh no pisara nuestro título. Quedan `CAR_ROUTER_LOADED`, la función `cl
 hook `zshexit`.
 
 **`bin/claude-account`:** `_surface` se convierte en `_tint`, que emite solo el color del
-perfil resuelto y nada más. Se añade `_untint`, que emite el reset al tema. Desaparece el
+perfil resuelto y nada más. Se añade `_untint`, sin argumentos, que emite el reset al tema. Desaparece el
 subcomando `mark`: repintaba la superficie en el prompt, que es exactamente lo que este
 diseño quita. `check` deja de exigir `no-title` en la config de Ghostty.
 
