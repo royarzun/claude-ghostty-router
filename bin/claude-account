@@ -50,11 +50,56 @@ cmd_surface() {
   return 0
 }
 
+# _launch-check <directorio>
+# Exito: imprime el config-dir verificado (o nada si no hay routes.conf).
+# Fallo: explica en stderr y devuelve el codigo del motivo. Sin excepciones:
+# si no se puede verificar, no se arranca.
+# Los CAR_* que se devuelven vienen de lib/config.sh (siempre enteros); este
+# archivo se analiza aislado y no se ve ese origen, por eso cada
+# `return $CAR_*` sin comillas se marca como sospechoso.
+# shellcheck disable=SC2086
+cmd_launch_check() {
+  local dir="${1:-$PWD}" record profile label config_dir glob color email status
+
+  [ -f "$CAR_CONF" ] || return 0
+
+  car_load_config "$CAR_CONF" || return $CAR_ECONFIG
+  record="$(resolve_route "$dir")" || return $CAR_ECONFIG
+  # color no se usa en esta ruta: solo hace falta para pintar la superficie.
+  # shellcheck disable=SC2034
+  IFS=$'\t' read -r profile label config_dir glob color <<< "$record"
+
+  if [ "$glob" = "-" ]; then
+    printf '%s' "$config_dir"
+    return 0
+  fi
+
+  email="$(identity_email "$config_dir")"
+  status=$?
+  if [ $status -ne 0 ]; then
+    echo "claude-account: no arranco Claude en $label (perfil '$profile')." >&2
+    echo "  Arregla la sesion con: claude-account login $profile" >&2
+    return $status
+  fi
+
+  if ! identity_matches "$email" "$glob"; then
+    echo "claude-account: cuenta equivocada para $label (perfil '$profile')." >&2
+    echo "  esperaba: $glob" >&2
+    echo "  logueada: $email" >&2
+    echo "  Arreglalo con: claude-account login $profile" >&2
+    return $CAR_EMISMATCH
+  fi
+
+  printf '%s' "$config_dir"
+  return 0
+}
+
 main() {
   local command="${1:-status}"
   shift || true
   case "$command" in
     _surface) cmd_surface "$@" ;;
+    _launch-check) cmd_launch_check "$@" ;;
     *)
       echo "claude-account: comando desconocido '$command'" >&2
       return 1
