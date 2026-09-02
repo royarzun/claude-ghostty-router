@@ -9,7 +9,7 @@ setup() {
   make_repo "$HOME/repos/miapp"
   mkdir -p "$HOME/repos/miapp/src"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   car_load_config "$CAR_CONF"
@@ -22,7 +22,7 @@ setup() {
   make_repo "$HOME/repos/miapp"
   git -C "$HOME/repos/miapp" worktree add -q -b rama "$HOME/scratch/rama-suelta"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   car_load_config "$CAR_CONF"
@@ -34,7 +34,7 @@ setup() {
 @test "la etiqueta de proyecto es la raiz del repo, no el subdirectorio" {
   make_repo "$HOME/repos/miapp"
   mkdir -p "$HOME/repos/miapp/src/hondo"
-  write_conf "profile personal ~/.claude royarzun@gmail.com -"
+  write_conf "profile personal ~/.claude tu-email@ejemplo.com -"
   car_load_config "$CAR_CONF"
   run resolve_route "$HOME/repos/miapp/src/hondo"
   [[ "$output" == personal$'\t'miapp$'\t'* ]]
@@ -42,14 +42,14 @@ setup() {
 
 @test "fuera de un repo la etiqueta es el basename del directorio" {
   mkdir -p "$HOME/notas/varias"
-  write_conf "profile personal ~/.claude royarzun@gmail.com -"
+  write_conf "profile personal ~/.claude tu-email@ejemplo.com -"
   car_load_config "$CAR_CONF"
   run resolve_route "$HOME/notas/varias"
   [[ "$output" == personal$'\t'varias$'\t'* ]]
 }
 
 @test "un directorio inexistente no revienta y cae al perfil por defecto" {
-  write_conf "profile personal ~/.claude royarzun@gmail.com -"
+  write_conf "profile personal ~/.claude tu-email@ejemplo.com -"
   car_load_config "$CAR_CONF"
   run resolve_route "$HOME/no/existe"
   [ "$status" -eq 0 ]
@@ -61,7 +61,7 @@ setup() {
   make_repo "$HOME/volumen/miapp"
   ln -s "$HOME/volumen" "$HOME/enlace"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/volumen/miapp work"
   car_load_config "$CAR_CONF"
@@ -76,7 +76,7 @@ setup() {
   mkdir -p "$HOME/volumen/notas"
   ln -s "$HOME/volumen" "$HOME/enlace"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/volumen/notas work"
   car_load_config "$CAR_CONF"

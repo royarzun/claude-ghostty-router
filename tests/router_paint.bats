@@ -2,7 +2,7 @@ setup() {
   load helper
   setup_fixture
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   mkdir -p "$HOME/repos/miapp" "$HOME/notas"
@@ -61,7 +61,7 @@ run_zsh() {
     cd '$HOME/repos/miapp'
     _car_paint >/dev/null
     sleep 1
-    print -r -- 'profile personal ~/.claude royarzun@gmail.com -' > '$CAR_CONF'
+    print -r -- 'profile personal ~/.claude tu-email@ejemplo.com -' > '$CAR_CONF'
     _car_paint
   "
   [[ "$output" == *"personal · miapp"* ]]

@@ -7,7 +7,7 @@ setup() {
 
 @test "carga perfiles y rutas en arrays paralelos" {
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/uno work"
   car_load_config "$CAR_CONF"

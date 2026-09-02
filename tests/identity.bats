@@ -14,10 +14,10 @@ setup() {
 
 @test "lee el email del layout hermano (<dir>.json)" {
   mkdir -p "$HOME/.claude"
-  printf '{"oauthAccount":{"emailAddress":"royarzun@gmail.com"}}\n' > "$HOME/.claude.json"
+  printf '{"oauthAccount":{"emailAddress":"tu-email@ejemplo.com"}}\n' > "$HOME/.claude.json"
   run identity_email "$HOME/.claude"
   [ "$status" -eq 0 ]
-  [ "$output" = "royarzun@gmail.com" ]
+  [ "$output" = "tu-email@ejemplo.com" ]
 }
 
 @test "el layout interno gana sobre el hermano" {
@@ -79,7 +79,7 @@ setup() {
 }
 
 @test "identity_matches rechaza el glob que no corresponde" {
-  run identity_matches "royarzun@gmail.com" "*@empresa.com"
+  run identity_matches "tu-email@ejemplo.com" "*@empresa.com"
   [ "$status" -eq 5 ]
 }
 

@@ -4,7 +4,7 @@ setup() {
   source "$CAR_ROOT/lib/config.sh"
   source "$CAR_ROOT/lib/resolve.sh"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/proyecto-uno/interno personal" \
     "route ~/repos/proyecto-uno work" \
@@ -63,7 +63,7 @@ setup() {
 
 @test "una ruta con barra final casa igual: es lo que escribe el autocompletado" {
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/conbarra/ work"
   car_load_config "$CAR_CONF"
@@ -76,7 +76,7 @@ setup() {
 
 @test "el config-dir de un perfil tolera la barra final" {
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work/ *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   car_load_config "$CAR_CONF"

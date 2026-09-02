@@ -3,7 +3,7 @@ setup() {
   setup_fixture
   CA="$CAR_ROOT/bin/claude-account"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   mkdir -p "$HOME/repos/miapp"
@@ -29,19 +29,19 @@ setup() {
 }
 
 @test "status muestra cada perfil con su email logueado" {
-  make_profile ".claude" "royarzun@gmail.com"
+  make_profile ".claude" "tu-email@ejemplo.com"
   make_profile ".claude-work" "ricardo@empresa.com"
   cd "$HOME/repos/miapp"
   run "$CA"
   [ "$status" -eq 0 ]
   [[ "$output" == *"personal"* ]]
-  [[ "$output" == *"royarzun@gmail.com"* ]]
+  [[ "$output" == *"tu-email@ejemplo.com"* ]]
   [[ "$output" == *"ricardo@empresa.com"* ]]
   [[ "$output" == *"work"* ]]
 }
 
 @test "status marca los perfiles sin sesion" {
-  make_profile ".claude" "royarzun@gmail.com"
+  make_profile ".claude" "tu-email@ejemplo.com"
   run "$CA" status
   [[ "$output" == *"sin sesion"* ]]
 }

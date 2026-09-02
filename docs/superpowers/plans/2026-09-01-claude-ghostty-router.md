@@ -470,7 +470,7 @@ setup() {
 
 @test "carga perfiles y rutas en arrays paralelos" {
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/uno work"
   car_load_config "$CAR_CONF"
@@ -614,7 +614,7 @@ setup() {
   source "$CAR_ROOT/lib/config.sh"
   source "$CAR_ROOT/lib/resolve.sh"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/proyecto-uno/interno personal" \
     "route ~/repos/proyecto-uno work" \
@@ -761,7 +761,7 @@ setup() {
   make_repo "$HOME/repos/miapp"
   mkdir -p "$HOME/repos/miapp/src"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   car_load_config "$CAR_CONF"
@@ -774,7 +774,7 @@ setup() {
   make_repo "$HOME/repos/miapp"
   git -C "$HOME/repos/miapp" worktree add -q -b rama "$HOME/scratch/rama-suelta"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   car_load_config "$CAR_CONF"
@@ -786,7 +786,7 @@ setup() {
 @test "la etiqueta de proyecto es la raiz del repo, no el subdirectorio" {
   make_repo "$HOME/repos/miapp"
   mkdir -p "$HOME/repos/miapp/src/hondo"
-  write_conf "profile personal ~/.claude royarzun@gmail.com -"
+  write_conf "profile personal ~/.claude tu-email@ejemplo.com -"
   car_load_config "$CAR_CONF"
   run resolve_route "$HOME/repos/miapp/src/hondo"
   [[ "$output" == personal$'\t'miapp$'\t'* ]]
@@ -794,14 +794,14 @@ setup() {
 
 @test "fuera de un repo la etiqueta es el basename del directorio" {
   mkdir -p "$HOME/notas/varias"
-  write_conf "profile personal ~/.claude royarzun@gmail.com -"
+  write_conf "profile personal ~/.claude tu-email@ejemplo.com -"
   car_load_config "$CAR_CONF"
   run resolve_route "$HOME/notas/varias"
   [[ "$output" == personal$'\t'varias$'\t'* ]]
 }
 
 @test "un directorio inexistente no revienta y cae al perfil por defecto" {
-  write_conf "profile personal ~/.claude royarzun@gmail.com -"
+  write_conf "profile personal ~/.claude tu-email@ejemplo.com -"
   car_load_config "$CAR_CONF"
   run resolve_route "$HOME/no/existe"
   [ "$status" -eq 0 ]
@@ -909,10 +909,10 @@ setup() {
 
 @test "lee el email del layout hermano (<dir>.json)" {
   mkdir -p "$HOME/.claude"
-  printf '{"oauthAccount":{"emailAddress":"royarzun@gmail.com"}}\n' > "$HOME/.claude.json"
+  printf '{"oauthAccount":{"emailAddress":"tu-email@ejemplo.com"}}\n' > "$HOME/.claude.json"
   run identity_email "$HOME/.claude"
   [ "$status" -eq 0 ]
-  [ "$output" = "royarzun@gmail.com" ]
+  [ "$output" = "tu-email@ejemplo.com" ]
 }
 
 @test "el layout interno gana sobre el hermano" {
@@ -974,7 +974,7 @@ setup() {
 }
 
 @test "identity_matches rechaza el glob que no corresponde" {
-  run identity_matches "royarzun@gmail.com" "*@empresa.com"
+  run identity_matches "tu-email@ejemplo.com" "*@empresa.com"
   [ "$status" -eq 5 ]
 }
 
@@ -1263,7 +1263,7 @@ setup() {
 
 @test "pinta titulo y color del perfil resuelto" {
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   mkdir -p "$HOME/repos/miapp"
@@ -1273,7 +1273,7 @@ setup() {
 }
 
 @test "el perfil por defecto resetea el fondo" {
-  write_conf "profile personal ~/.claude royarzun@gmail.com -"
+  write_conf "profile personal ~/.claude tu-email@ejemplo.com -"
   mkdir -p "$HOME/notas"
   run "$CA" _surface "$HOME/notas"
   [ "$status" -eq 0 ]
@@ -1283,7 +1283,7 @@ setup() {
 @test "funciona invocado a traves de un symlink" {
   # Asi es como se instala: ~/.local/bin/claude-account -> repo/bin/claude-account.
   # Si el CLI no resuelve el symlink, no encuentra sus propias librerias.
-  write_conf "profile personal ~/.claude royarzun@gmail.com -"
+  write_conf "profile personal ~/.claude tu-email@ejemplo.com -"
   mkdir -p "$HOME/.local/bin" "$HOME/notas"
   ln -sf "$CA" "$HOME/.local/bin/claude-account"
   run "$HOME/.local/bin/claude-account" _surface "$HOME/notas"
@@ -1419,7 +1419,7 @@ setup() {
   setup_fixture
   CA="$CAR_ROOT/bin/claude-account"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   mkdir -p "$HOME/repos/miapp" "$HOME/notas"
@@ -1433,11 +1433,11 @@ setup() {
 }
 
 @test "cuenta equivocada: bloquea con 5 y dice como arreglarlo" {
-  make_profile ".claude-work" "royarzun@gmail.com"
+  make_profile ".claude-work" "tu-email@ejemplo.com"
   run "$CA" _launch-check "$HOME/repos/miapp"
   [ "$status" -eq 5 ]
   [[ "$output" == *"*@empresa.com"* ]]
-  [[ "$output" == *"royarzun@gmail.com"* ]]
+  [[ "$output" == *"tu-email@ejemplo.com"* ]]
   [[ "$output" == *"claude-account login work"* ]]
 }
 
@@ -1574,7 +1574,7 @@ setup() {
   setup_fixture
   CA="$CAR_ROOT/bin/claude-account"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   mkdir -p "$HOME/repos/miapp"
@@ -1600,19 +1600,19 @@ setup() {
 }
 
 @test "status muestra cada perfil con su email logueado" {
-  make_profile ".claude" "royarzun@gmail.com"
+  make_profile ".claude" "tu-email@ejemplo.com"
   make_profile ".claude-work" "ricardo@empresa.com"
   cd "$HOME/repos/miapp"
   run "$CA"
   [ "$status" -eq 0 ]
   [[ "$output" == *"personal"* ]]
-  [[ "$output" == *"royarzun@gmail.com"* ]]
+  [[ "$output" == *"tu-email@ejemplo.com"* ]]
   [[ "$output" == *"ricardo@empresa.com"* ]]
   [[ "$output" == *"work"* ]]
 }
 
 @test "status marca los perfiles sin sesion" {
-  make_profile ".claude" "royarzun@gmail.com"
+  make_profile ".claude" "tu-email@ejemplo.com"
   run "$CA" status
   [[ "$output" == *"sin sesion"* ]]
 }
@@ -1784,13 +1784,13 @@ setup() {
   CA="$CAR_ROOT/bin/claude-account"
   export CAR_GHOSTTY_CONF="$BATS_TEST_TMPDIR/config.ghostty"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
 }
 
 @test "todo en orden sale con 0" {
-  make_profile ".claude" "royarzun@gmail.com"
+  make_profile ".claude" "tu-email@ejemplo.com"
   make_profile ".claude-work" "ricardo@empresa.com"
   printf 'shell-integration-features = cursor,no-sudo,no-title,path\n' > "$CAR_GHOSTTY_CONF"
   export CAR_ROUTER_LOADED=1
@@ -1800,7 +1800,7 @@ setup() {
 }
 
 @test "un perfil sin sesion hace fallar el check" {
-  make_profile ".claude" "royarzun@gmail.com"
+  make_profile ".claude" "tu-email@ejemplo.com"
   make_profile ".claude-work"
   printf 'shell-integration-features = no-title\n' > "$CAR_GHOSTTY_CONF"
   export CAR_ROUTER_LOADED=1
@@ -1811,8 +1811,8 @@ setup() {
 }
 
 @test "un email que no cumple su glob hace fallar el check" {
-  make_profile ".claude" "royarzun@gmail.com"
-  make_profile ".claude-work" "royarzun@gmail.com"
+  make_profile ".claude" "tu-email@ejemplo.com"
+  make_profile ".claude-work" "tu-email@ejemplo.com"
   printf 'shell-integration-features = no-title\n' > "$CAR_GHOSTTY_CONF"
   export CAR_ROUTER_LOADED=1
   run "$CA" check
@@ -1824,8 +1824,8 @@ setup() {
   write_conf \
     "profile personal ~/.claude - -" \
     "profile work ~/.claude-work - -"
-  make_profile ".claude" "royarzun@gmail.com"
-  make_profile ".claude-work" "royarzun@gmail.com"
+  make_profile ".claude" "tu-email@ejemplo.com"
+  make_profile ".claude-work" "tu-email@ejemplo.com"
   printf 'shell-integration-features = no-title\n' > "$CAR_GHOSTTY_CONF"
   export CAR_ROUTER_LOADED=1
   run "$CA" check
@@ -1834,7 +1834,7 @@ setup() {
 }
 
 @test "sin no-title en la config de Ghostty avisa" {
-  make_profile ".claude" "royarzun@gmail.com"
+  make_profile ".claude" "tu-email@ejemplo.com"
   make_profile ".claude-work" "ricardo@empresa.com"
   printf 'theme = Github Dark Default\n' > "$CAR_GHOSTTY_CONF"
   export CAR_ROUTER_LOADED=1
@@ -1844,7 +1844,7 @@ setup() {
 }
 
 @test "sin el router cargado en la sesion avisa" {
-  make_profile ".claude" "royarzun@gmail.com"
+  make_profile ".claude" "tu-email@ejemplo.com"
   make_profile ".claude-work" "ricardo@empresa.com"
   printf 'shell-integration-features = no-title\n' > "$CAR_GHOSTTY_CONF"
   run env -u CAR_ROUTER_LOADED "$CA" check
@@ -2031,7 +2031,7 @@ setup() {
   load helper
   setup_fixture
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   mkdir -p "$HOME/repos/miapp" "$HOME/notas"
@@ -2090,7 +2090,7 @@ run_zsh() {
     cd '$HOME/repos/miapp'
     _car_paint >/dev/null
     sleep 1
-    print -r -- 'profile personal ~/.claude royarzun@gmail.com -' > '$CAR_CONF'
+    print -r -- 'profile personal ~/.claude tu-email@ejemplo.com -' > '$CAR_CONF'
     _car_paint
   "
   [[ "$output" == *"personal · miapp"* ]]
@@ -2204,7 +2204,7 @@ setup() {
   load helper
   setup_fixture
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   mkdir -p "$HOME/repos/miapp"
@@ -2239,7 +2239,7 @@ run_zsh() {
 }
 
 @test "cuenta equivocada: NO arranca" {
-  make_profile ".claude-work" "royarzun@gmail.com"
+  make_profile ".claude-work" "tu-email@ejemplo.com"
   run_zsh "cd '$HOME/repos/miapp'; claude"
   [ "$status" -eq 5 ]
   [ ! -f "$RASTRO" ]
@@ -2273,7 +2273,7 @@ FALSO
 }
 
 @test "fuera de Ghostty la funcion ni siquiera existe" {
-  make_profile ".claude-work" "royarzun@gmail.com"
+  make_profile ".claude-work" "tu-email@ejemplo.com"
   TERM=xterm-256color run zsh -f -c "
     export CAR_CONF='$CAR_CONF'
     export RASTRO='$RASTRO'
@@ -2366,7 +2366,7 @@ Archivo `routes.conf.example`:
 #
 # El primer perfil declarado es el perfil por defecto.
 
-profile personal  ~/.claude       royarzun@gmail.com  -
+profile personal  ~/.claude       tu-email@ejemplo.com  -
 profile work      ~/.claude-work  *@tuempresa.com     #171b12
 
 # route ~/repos/proyecto-de-trabajo  work

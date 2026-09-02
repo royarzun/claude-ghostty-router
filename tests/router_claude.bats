@@ -2,7 +2,7 @@ setup() {
   load helper
   setup_fixture
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   mkdir -p "$HOME/repos/miapp"
@@ -37,7 +37,7 @@ run_zsh() {
 }
 
 @test "cuenta equivocada: NO arranca" {
-  make_profile ".claude-work" "royarzun@gmail.com"
+  make_profile ".claude-work" "tu-email@ejemplo.com"
   run_zsh "cd '$HOME/repos/miapp'; claude"
   [ "$status" -eq 5 ]
   [ ! -f "$RASTRO" ]
@@ -71,7 +71,7 @@ FALSO
 }
 
 @test "fuera de Ghostty la funcion ni siquiera existe" {
-  make_profile ".claude-work" "royarzun@gmail.com"
+  make_profile ".claude-work" "tu-email@ejemplo.com"
   TERM=xterm-256color run zsh -f -c "
     export CAR_CONF='$CAR_CONF'
     export RASTRO='$RASTRO'

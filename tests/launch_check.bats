@@ -3,7 +3,7 @@ setup() {
   setup_fixture
   CA="$CAR_ROOT/bin/claude-account"
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   mkdir -p "$HOME/repos/miapp" "$HOME/notas"
@@ -17,11 +17,11 @@ setup() {
 }
 
 @test "cuenta equivocada: bloquea con 5 y dice como arreglarlo" {
-  make_profile ".claude-work" "royarzun@gmail.com"
+  make_profile ".claude-work" "tu-email@ejemplo.com"
   run "$CA" _launch-check "$HOME/repos/miapp"
   [ "$status" -eq 5 ]
   [[ "$output" == *"*@empresa.com"* ]]
-  [[ "$output" == *"royarzun@gmail.com"* ]]
+  [[ "$output" == *"tu-email@ejemplo.com"* ]]
   [[ "$output" == *"claude-account login work"* ]]
 }
 
@@ -71,8 +71,8 @@ setup() {
   # Con CLAUDE_CONFIG_DIR puesto, Claude Code busca <dir>/.claude.json; sin la
   # variable usa el hermano ~/.claude.json. Forzarla para el directorio por
   # defecto le esconderia su propia configuracion al usuario.
-  write_conf "profile personal ~/.claude royarzun@gmail.com -" "route ~/notas personal"
-  make_profile ".claude" "royarzun@gmail.com"
+  write_conf "profile personal ~/.claude tu-email@ejemplo.com -" "route ~/notas personal"
+  make_profile ".claude" "tu-email@ejemplo.com"
   run "$CA" _launch-check "$HOME/notas"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
@@ -80,7 +80,7 @@ setup() {
 
 @test "un perfil que no es el por defecto si define CLAUDE_CONFIG_DIR" {
   write_conf \
-    "profile personal ~/.claude royarzun@gmail.com -" \
+    "profile personal ~/.claude tu-email@ejemplo.com -" \
     "profile work ~/.claude-work *@empresa.com #171b12" \
     "route ~/repos/miapp work"
   make_profile ".claude-work" "ricardo@empresa.com"
@@ -90,7 +90,7 @@ setup() {
 }
 
 @test "el perfil por defecto se sigue verificando aunque no exporte la variable" {
-  write_conf "profile personal ~/.claude royarzun@gmail.com -" "route ~/notas personal"
+  write_conf "profile personal ~/.claude tu-email@ejemplo.com -" "route ~/notas personal"
   make_profile ".claude" "otro@gmail.com"
   run "$CA" _launch-check "$HOME/notas"
   [ "$status" -eq 5 ]

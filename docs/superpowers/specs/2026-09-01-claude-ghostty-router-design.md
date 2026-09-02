@@ -109,7 +109,7 @@ compite con `~/.local/bin/claude`.
 
 ```conf
 # profile <nombre> <config-dir>    <email-glob>        <fondo-hex>
-profile personal  ~/.claude         royarzun@gmail.com  -
+profile personal  ~/.claude         tu-email@ejemplo.com  -
 profile work      ~/.claude-work    *@tuempresa.com     #171b12
 
 # route <ruta>  <perfil>     — gana la primera declarada
