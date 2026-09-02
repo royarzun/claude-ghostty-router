@@ -151,12 +151,12 @@ cmd_launch_check() {
 }
 
 cmd_which() {
-  local dir="${1:-$PWD}" record profile label pdir pglob color tint
+  local dir="${1:-$PWD}" record
   car_load_config "$CAR_CONF" || return $CAR_ECONFIG
   record="$(resolve_route "$dir")" || return $CAR_ECONFIG
-  # shellcheck disable=SC2034
-  IFS=$'\t' read -r profile label pdir pglob color tint <<< "$record"
-  printf '%s\n' "$profile"
+  # Solo hace falta el primer campo, asi que no se desmonta el registro entero:
+  # un campo nuevo en resolve_route no obliga a volver aqui.
+  printf '%s\n' "${record%%$'\t'*}"
 }
 
 cmd_routes() {
@@ -172,7 +172,7 @@ cmd_routes() {
 }
 
 cmd_status() {
-  local i email status record profile here pdir pglob color tint
+  local i email status record profile here resto
 
   car_load_config "$CAR_CONF" || return $CAR_ECONFIG
 
@@ -189,7 +189,7 @@ cmd_status() {
 
   record="$(resolve_route "$PWD")" || return $CAR_ECONFIG
   # shellcheck disable=SC2034
-  IFS=$'\t' read -r profile here pdir pglob color tint <<< "$record"
+  IFS=$'\t' read -r profile here resto <<< "$record"
   echo
   echo "Directorio actual: $here -> perfil '$profile'"
 }

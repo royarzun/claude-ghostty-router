@@ -32,7 +32,7 @@ setup() {
   write_conf "profile work ~/.claude-work *@empresa.com #171b12"
   run config_parse "$CAR_CONF"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"#171b12"* ]]
+  [ "$output" = "$(printf 'profile\twork\t%s/.claude-work\t*@empresa.com\t#171b12\t-' "$HOME")" ]
 }
 
 @test "parsea rutas conservando el glob sin expandir" {
@@ -75,7 +75,7 @@ setup() {
   write_conf "profile work ~/.claude-work *@empresa.com #8fbc5a"
   run config_parse "$CAR_CONF"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"$(printf '#8fbc5a\t-')" ]]
+  [ "$output" = "$(printf 'profile\twork\t%s/.claude-work\t*@empresa.com\t#8fbc5a\t-' "$HOME")" ]
 }
 
 @test "rechaza un fondo mal formado" {
@@ -83,6 +83,13 @@ setup() {
   run config_parse "$CAR_CONF"
   [ "$status" -eq 2 ]
   [[ "$output" == *"fondo"* ]]
+}
+
+@test "un perfil puede tener fondo sin color de badge" {
+  write_conf "profile work ~/.claude-work *@empresa.com - #171b12"
+  run config_parse "$CAR_CONF"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(printf 'profile\twork\t%s/.claude-work\t*@empresa.com\t-\t#171b12' "$HOME")" ]
 }
 
 @test "rechaza una ruta sin perfil" {

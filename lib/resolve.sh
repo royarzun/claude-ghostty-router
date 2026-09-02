@@ -35,8 +35,7 @@ car_load_config() {
           echo "claude-account: perfil duplicado '$f2' en $file" >&2
           return $CAR_ECONFIG
         fi
-        CAR_P_NAME+=("$f2"); CAR_P_DIR+=("$f3"); CAR_P_GLOB+=("$f4"); CAR_P_COLOR+=("$f5")
-        CAR_P_TINT+=("$f6")
+        CAR_P_NAME+=("$f2"); CAR_P_DIR+=("$f3"); CAR_P_GLOB+=("$f4"); CAR_P_COLOR+=("$f5"); CAR_P_TINT+=("$f6")
         ;;
       route)
         CAR_R_PATH+=("$f2"); CAR_R_PROFILE+=("$f3")
