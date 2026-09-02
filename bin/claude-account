@@ -171,6 +171,88 @@ claude-account — enrutado de cuentas Claude por carpeta, dentro de Ghostty
 AYUDA
 }
 
+CAR_GHOSTTY_CONF="${CAR_GHOSTTY_CONF:-$HOME/Library/Application Support/com.mitchellh.ghostty/config.ghostty}"
+
+car_check_ok=0
+car_check_bad=0
+
+car_ok()   { printf '  ok   %s\n' "$1"; car_check_ok=$((car_check_ok + 1)); }
+car_fail() { printf '  FALLA %s\n' "$1"; car_check_bad=$((car_check_bad + 1)); }
+
+cmd_check() {
+  local i j email status expires now dias creds
+
+  car_check_ok=0
+  car_check_bad=0
+
+  echo "Configuracion"
+  if car_load_config "$CAR_CONF" 2>/dev/null; then
+    car_ok "routes.conf valido (${#CAR_P_NAME[@]} perfiles, ${#CAR_R_PATH[@]} rutas)"
+  else
+    car_fail "routes.conf invalido o ausente: $CAR_CONF"
+    car_load_config "$CAR_CONF"
+    return 1
+  fi
+
+  echo "Sesion"
+  if [ -n "${CAR_ROUTER_LOADED:-}" ]; then
+    car_ok "el router esta cargado en esta shell"
+  else
+    car_fail "el router no esta cargado en esta shell (abre un tab nuevo, o revisa ~/.zshrc)"
+  fi
+
+  if [ -f "$CAR_GHOSTTY_CONF" ]; then
+    if grep -q 'no-title' "$CAR_GHOSTTY_CONF"; then
+      car_ok "Ghostty tiene no-title en shell-integration-features"
+    else
+      car_fail "Ghostty reescribira el titulo: falta no-title en shell-integration-features"
+    fi
+  else
+    car_fail "no encuentro la config de Ghostty en $CAR_GHOSTTY_CONF"
+  fi
+
+  echo "Perfiles"
+  for ((i = 0; i < ${#CAR_P_NAME[@]}; i++)); do
+    email="$(identity_email "${CAR_P_DIR[$i]}" 2>/dev/null)"
+    status=$?
+    if [ $status -ne 0 ]; then
+      car_fail "${CAR_P_NAME[$i]}: sin sesion -> claude-account login ${CAR_P_NAME[$i]}"
+      continue
+    fi
+    if identity_matches "$email" "${CAR_P_GLOB[$i]}"; then
+      car_ok "${CAR_P_NAME[$i]}: $email"
+    else
+      car_fail "${CAR_P_NAME[$i]}: $email no coincide con ${CAR_P_GLOB[$i]}"
+    fi
+
+    creds="${CAR_P_DIR[$i]}/.credentials.json"
+    if [ -f "$creds" ] && expires="$(python3 "$CAR_ROOT_DIR/lib/expiry.py" "$creds" 2>/dev/null)"; then
+      now=$(( $(date +%s) * 1000 ))
+      if [ "$expires" -lt "$now" ]; then
+        echo "       (token vencido; Claude lo renovara al arrancar)"
+      else
+        dias=$(( (expires - now) / 86400000 ))
+        [ "$dias" -le 3 ] && echo "       (el token vence en $dias dias)"
+      fi
+    fi
+  done
+
+  for ((i = 0; i < ${#CAR_P_NAME[@]}; i++)); do
+    for ((j = i + 1; j < ${#CAR_P_NAME[@]}; j++)); do
+      local a b
+      a="$(identity_email "${CAR_P_DIR[$i]}" 2>/dev/null)" || continue
+      b="$(identity_email "${CAR_P_DIR[$j]}" 2>/dev/null)" || continue
+      if [ "$a" = "$b" ]; then
+        car_fail "${CAR_P_NAME[$i]} y ${CAR_P_NAME[$j]} usan la misma cuenta ($a)"
+      fi
+    done
+  done
+
+  echo
+  echo "$car_check_ok en orden, $car_check_bad por arreglar"
+  [ "$car_check_bad" -eq 0 ]
+}
+
 main() {
   local command="${1:-status}"
   shift || true
@@ -181,6 +263,7 @@ main() {
     routes)        cmd_routes "$@" ;;
     status)        cmd_status "$@" ;;
     login)         cmd_login "$@" ;;
+    check)         cmd_check "$@" ;;
     mark)          cmd_surface "$PWD" ;;
     help|-h|--help) cmd_help ;;
     *)
