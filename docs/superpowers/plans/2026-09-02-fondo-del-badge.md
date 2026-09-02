@@ -380,11 +380,16 @@ Y sustituir las cuatro últimas líneas de la función:
   # pasa por badge_sanitize -el perfil tambien, que hasta ahora se saneaba de
   # rebote dentro de badge_color- porque el recorte a 60 va por campo.
   rest=" · $(badge_sanitize "$email")"
-  [ -n "$label" ] && rest="$rest · $(badge_sanitize "$label")"
+  if [ -n "$label" ]; then
+    rest="$rest · $(badge_sanitize "$label")"
+  fi
   badge_bar "$color" "$(badge_sanitize "$profile")" "$rest"
   printf '\n'
   return 0
 ```
+
+El `if` en vez de `&&` no cambia el resultado de hoy: evita que el código de salida de la
+función quede atado a si la carpeta llegó vacía.
 
 - [ ] **Step 4: Verificar que pasan**
 

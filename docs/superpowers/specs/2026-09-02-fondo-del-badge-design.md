@@ -1,7 +1,7 @@
 # El fondo del badge — Diseño
 
 **Fecha:** 2026-09-02
-**Estado:** implementado
+**Estado:** implementado; falta ver el badge en una sesión real (ver «Riesgo anotado»)
 
 **Modifica:** [2026-09-02-badge-en-statusline-design.md](2026-09-02-badge-en-statusline-design.md)
 

@@ -86,9 +86,11 @@ route ~/repos/cliente-*            work
   solo si sabes por qué.
 - `color` es el `#rrggbb` con el que se pinta el **fondo** de la línea del badge. `-` la deja
   sin fondo. El color del texto no se declara: sale de la luminancia del fondo —negro sobre
-  los tonos claros, blanco sobre los oscuros—, así que cualquier color se lee.
-  `claude-account check` imprime la muestra con ese mismo fondo, así que un tono que no
-  convenza se ve ahí en vez de descubrirse dentro de una sesión.
+  los tonos claros, blanco sobre los oscuros—, así que cualquier color se lee. Que se note es
+  cosa tuya: conviene un tono que se distinga del fondo de tu tema, o la barra se pierde
+  contra la terminal aunque el texto de encima se lea bien. `claude-account check` imprime la
+  muestra con ese mismo fondo, así que un tono que no convenza se ve ahí en vez de
+  descubrirse dentro de una sesión.
 
 **`route <ruta> <perfil>`**
 

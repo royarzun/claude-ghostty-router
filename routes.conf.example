@@ -5,6 +5,8 @@
 #     color:      #rrggbb con el que se pinta el fondo de la linea del badge
 #                 que se ve dentro de Claude Code. "-" = sin fondo. El color
 #                 del texto no se declara: se calcula para que se lea encima.
+#                 Que se note es cosa tuya: usa un tono que se distinga del
+#                 fondo de tu tema.
 #
 #   route <ruta> <perfil>
 #     Gana la primera ruta declarada: declara las excepciones antes que el padre.
