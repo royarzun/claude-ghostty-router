@@ -24,6 +24,20 @@ perfiles_ok() {
   [[ "$output" == *"routes.conf valido"* ]]
 }
 
+@test "check muestra los dos colores de cada perfil" {
+  # Los campos cuarto y quinto son adyacentes y con la misma sintaxis: un
+  # intercambio parsea limpio y solo se nota mirando el resultado. Verlos aqui
+  # es lo unico que convierte ese fallo silencioso en uno visible.
+  write_conf \
+    "profile personal ~/.claude tu-email@ejemplo.com - -" \
+    "profile work ~/.claude-work *@empresa.com #8fbc5a #171b12" \
+    "route ~/repos/miapp work"
+  perfiles_ok
+  run "$CA" check
+  [[ "$output" == *"badge #8fbc5a"* ]]
+  [[ "$output" == *"fondo #171b12"* ]]
+}
+
 @test "un perfil sin sesion hace fallar el check" {
   perfiles_ok
   rm -f "$HOME/.claude-work/.claude.json"

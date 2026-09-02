@@ -295,6 +295,10 @@ cmd_check() {
     status=$?
     if [ $status -ne 0 ]; then
       car_fail "${CAR_P_NAME[$i]}: sin sesion -> claude-account login ${CAR_P_NAME[$i]}"
+      # Los colores salen de routes.conf, no de la sesion: verlos aqui no
+      # depende de que haya login, y es justo el caso donde mas falta hacen
+      # para depurar un perfil roto.
+      printf '       badge %s · fondo %s\n' "${CAR_P_COLOR[$i]}" "${CAR_P_TINT[$i]}"
       continue
     fi
     if identity_matches "$email" "${CAR_P_GLOB[$i]}"; then
@@ -302,6 +306,7 @@ cmd_check() {
     else
       car_fail "${CAR_P_NAME[$i]}: $email no coincide con ${CAR_P_GLOB[$i]}"
     fi
+    printf '       badge %s · fondo %s\n' "${CAR_P_COLOR[$i]}" "${CAR_P_TINT[$i]}"
 
     creds="${CAR_P_DIR[$i]}/.credentials.json"
     if [ -f "$creds" ] && expires="$(python3 "$CAR_ROOT_DIR/lib/expiry.py" "$creds" 2>/dev/null)"; then
