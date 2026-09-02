@@ -24,25 +24,6 @@ badge_sanitize() {
   printf '%s' "${text:0:$CAR_BADGE_MAX}"
 }
 
-# badge_color <texto> <color|-> -> el texto en negrita con el color del perfil.
-# Un color ausente, "-" o mal formado devuelve el texto tal cual: el badge
-# informa igual sin color, y aqui nada puede fallar de forma ruidosa.
-badge_color() {
-  local text red green blue
-  text="$(badge_sanitize "$1")"
-  case "${2:--}" in
-    '#'[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F])
-      red="$(printf '%d' "0x${2:1:2}")"
-      green="$(printf '%d' "0x${2:3:2}")"
-      blue="$(printf '%d' "0x${2:5:2}")"
-      printf '\033[1;38;2;%s;%s;%sm%s\033[0m' "$red" "$green" "$blue" "$text"
-      ;;
-    *)
-      printf '%s' "$text"
-      ;;
-  esac
-}
-
 # badge_fg <r> <g> <b> -> el frente que se lee sobre ese fondo, como "R;G;B".
 # Luminancia YIQ: la formula de contraste de la WCAG exige linearizar cada canal
 # antes de pesarlo, y para elegir entre exactamente dos frentes -negro o blanco-

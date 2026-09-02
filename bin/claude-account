@@ -81,7 +81,7 @@ cmd_statusline() {
   # La linea se arma entera y se envuelve UNA vez: el fondo tiene que cubrir
   # tambien el email y la carpeta, no solo el nombre del perfil. Cada campo
   # pasa por badge_sanitize -el perfil tambien, que hasta ahora se saneaba de
-  # rebote dentro de badge_color- porque el recorte a 60 va por campo.
+  # rebote dentro del pintado del color- porque el recorte a 60 va por campo.
   rest=" · $(badge_sanitize "$email")"
   if [ -n "$label" ]; then
     rest="$rest · $(badge_sanitize "$label")"
@@ -242,12 +242,12 @@ car_ok()   { printf '  ok   %s\n' "$1"; car_check_ok=$((car_check_ok + 1)); }
 car_fail() { printf '  FALLA %s\n' "$1"; car_check_bad=$((car_check_bad + 1)); }
 
 # car_colores <indice>
-# El color del badge del perfil, pintado con el mismo: un tono ilegible sobre
-# el tema se delata aqui, en vez de descubrirse dentro de la sesion.
+# El color del badge del perfil, pintado como se vera el badge: un tono que no
+# convenza se delata aqui, en vez de descubrirse dentro de la sesion.
 # Linea informativa y no una comprobacion: no toca car_check_ok ni car_check_bad.
 car_colores() {
   local i="$1"
-  printf '       badge %s\n' "$(badge_color "${CAR_P_COLOR[$i]}" "${CAR_P_COLOR[$i]}")"
+  printf '       badge %s\n' "$(badge_bar "${CAR_P_COLOR[$i]}" "${CAR_P_COLOR[$i]}")"
 }
 
 cmd_check() {

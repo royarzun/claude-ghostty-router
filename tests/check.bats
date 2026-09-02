@@ -24,15 +24,16 @@ perfiles_ok() {
   [[ "$output" == *"routes.conf valido"* ]]
 }
 
-# #8fbc5a = rgb(143, 188, 90). La prueba fija la secuencia SGR completa pegada
-# a la linea de SU perfil (no solo que aparezca en algun sitio del output):
-# un badge impreso encima del perfil anterior, o el de otro perfil, tambien
-# haria pasar una comprobacion que solo buscara la secuencia suelta.
-@test "el badge del perfil sale pintado con su propio color, debajo de su perfil" {
+# #8fbc5a = rgb(143, 188, 90), luminancia 163 -> texto negro. La prueba fija la
+# barra completa pegada a la linea de SU perfil (no solo que aparezca en algun
+# sitio del output): una muestra impresa encima del perfil anterior, o la de
+# otro perfil, tambien haria pasar una comprobacion que solo buscara la
+# secuencia suelta.
+@test "la muestra del perfil sale con su propio fondo, debajo de su perfil" {
   perfiles_ok
   run "$CA" check
   [ "$status" -eq 0 ]
-  [[ "$output" == *"work: ricardo@empresa.com"$'\n'"       badge $(printf '\033[1;38;2;143;188;90m#8fbc5a\033[0m')"* ]]
+  [[ "$output" == *"work: ricardo@empresa.com"$'\n'"       badge $(printf '\033[48;2;143;188;90;38;2;0;0;0m \033[1m#8fbc5a\033[22m \033[0m')"* ]]
   # personal no declara color ("-" en routes.conf): fijar tambien su linea
   # detecta ademas que las dos lineas no se hayan intercambiado entre si.
   [[ "$output" == *"personal: tu-email@ejemplo.com"$'\n'"       badge -"* ]]
