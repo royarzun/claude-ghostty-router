@@ -1,7 +1,7 @@
 # El fondo del badge — Diseño
 
 **Fecha:** 2026-09-02
-**Estado:** implementado; falta ver el badge en una sesión real (ver «Riesgo anotado»)
+**Estado:** implementado y visto en una sesión real
 
 **Modifica:** [2026-09-02-badge-en-statusline-design.md](2026-09-02-badge-en-statusline-design.md)
 
@@ -137,12 +137,17 @@ en `routes.conf.example`, y la fila de `lib/badge.sh` en la tabla de arquitectur
 La sección de Seguridad sigue siendo cierta y se queda, con una frase de más: el fondo se
 valida contra `#rrggbb` igual que se validaba el frente.
 
-## Riesgo anotado
+## Riesgo anotado, y cerrado
 
-Se da por hecho que Claude Code respeta `48;2` en el `statusLine` igual que respeta `38;2`. No
-está verificado; se ve en la primera sesión después del cambio. Si lo estripara, el badge se
-vería como se ve hoy —texto sin barra—, no roto: el modo de fallo es degradarse, que es la
-regla que el badge ya sigue en todos sus caminos.
+Se daba por hecho que Claude Code respeta `48;2` en el `statusLine` igual que respeta `38;2`.
+**Lo respeta**: comprobado el 2026-09-02 mirando el badge dentro de una sesión real, con los
+dos perfiles. Queda escrito aquí porque era el supuesto del que colgaba el diseño entero, y
+porque la próxima vez que alguien dude de si una secuencia sobrevive al `statusLine`, esta es
+la respuesta y no hace falta volver a averiguarla.
+
+Cuando aún no estaba comprobado, lo que permitía seguir adelante era esto: si lo estripara, el
+badge se habría visto como se veía antes —texto sin barra—, no roto. El modo de fallo era
+degradarse, que es la regla que el badge ya sigue en todos sus caminos.
 
 ## Fuera de alcance
 
