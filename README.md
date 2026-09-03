@@ -84,10 +84,13 @@ route ~/repos/cliente-*            work
 - `email-glob` es el patrón que **debe** cumplir la cuenta logueada ahí. `-` desactiva la
   verificación de ese perfil, lo que anula la única garantía que da esta herramienta: úsalo
   solo si sabes por qué.
-- `color` es el `#rrggbb` con el que se pinta el nombre del perfil en el badge. `-` lo deja
-  sin color. Conviene un tono legible sobre el fondo de tu tema: es texto, no un tinte.
-  `claude-account check` lo imprime pintado con el suyo, así que un tono ilegible se ve ahí
-  en vez de descubrirse dentro de una sesión.
+- `color` es el `#rrggbb` con el que se pinta el **fondo** de la línea del badge. `-` la deja
+  sin fondo. El color del texto no se declara: sale de la luminancia del fondo —negro sobre
+  los tonos claros, blanco sobre los oscuros—, así que cualquier color se lee. Que se note es
+  cosa tuya: conviene un tono que se distinga del fondo de tu tema, o la barra se pierde
+  contra la terminal aunque el texto de encima se lea bien. `claude-account check` imprime la
+  muestra con ese mismo fondo, así que un tono que no convenza se ve ahí en vez de
+  descubrirse dentro de una sesión.
 
 **`route <ruta> <perfil>`**
 
@@ -184,6 +187,10 @@ refresca con cada mensaje. Aquí ese comando es `claude-account statusline`.
 work · tu-cuenta@empresa.com · traza-backend
 ```
 
+Esa línea entera va sobre el fondo del color del perfil, con el nombre del perfil en negrita.
+El fondo llega hasta donde llega el texto y ni un carácter más: la fila no se rellena hasta el
+ancho de la terminal, porque esa superficie no es nuestra.
+
 El perfil y el email **no se deducen de la carpeta**: salen del `CLAUDE_CONFIG_DIR` con el que
 la sesión está corriendo de verdad, que el comando hereda por ser hijo del proceso `claude`.
 Por eso el badge dice lo que *es* y no lo que debería ser: si esquivas la función con
@@ -195,9 +202,12 @@ de `python3` por refresco, y no llama a `git` ni resuelve rutas.
 El badge se arma con un nombre de carpeta y con un email leído de un archivo, y ninguno de los
 dos es texto de confianza: una carpeta puede llamarse con bytes de control adentro. Claude Code
 renderiza el badge respetando ANSI, así que un nombre hostil podría colar sus propias
-secuencias. `lib/badge.sh` los filtra y recorta el texto antes de emitirlo, y `lib/statusline.py`
-los filtra otra vez en el punto por el que entran. El color se valida contra `#rrggbb` antes de
-entrar en una secuencia.
+secuencias. `lib/badge.sh` los filtra antes de emitirlos, `bin/claude-account` los recorta a
+60 caracteres campo a campo, y `lib/statusline.py` los filtra otra vez en el punto por el que
+entran. Ni siquiera el propio badge arma escapes por fuera: la negrita del nombre del perfil
+la emite `lib/badge.sh`, porque el filtro no puede distinguir un escape nuestro de uno colado
+por un nombre de carpeta. El color se valida contra `#rrggbb` antes de entrar en la secuencia,
+y el color del texto no viene de fuera: se calcula.
 
 Al no escribir nunca el título del tab, la vía de inyección que
 [ya dio CVEs en Ghostty](https://dgl.cx/2024/12/ghostty-terminal-title) deja de existir en vez
@@ -233,7 +243,7 @@ pisa un `statusLine` que no haya puesto él.
 
 ```sh
 brew install bats-core shellcheck
-bats tests/                                          # 128 tests
+bats tests/                                          # 136 tests
 shellcheck -s bash bin/claude-account install.sh lib/*.sh
 ```
 
